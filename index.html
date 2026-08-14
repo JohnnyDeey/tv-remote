@@ -41,6 +41,7 @@
     align-items: center;
     padding: 12px 12px 32px;
     overflow-x: hidden;
+    overflow-y: auto;
   }
 
   /* STATUS BAR */
@@ -523,8 +524,8 @@
       </div>
 
       <!-- D-PAD CIRCLE -->
-      <div style="position:relative;width:220px;height:220px;flex-shrink:0;">
-        <svg width="220" height="220" viewBox="0 0 220 220" style="position:absolute;top:0;left:0;">
+      <div style="position:relative;width:170px;height:170px;flex-shrink:0;">
+        <svg width="170" height="170" viewBox="0 0 220 220" style="position:absolute;top:0;left:0;">
           <!-- UP sector -->
           <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="sendKey('KEY_UP')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="this.style.fill='#333'" ontouchend="this.style.fill='#1e1e1e'"/>
           <!-- RIGHT sector -->
