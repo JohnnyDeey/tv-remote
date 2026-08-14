@@ -11,7 +11,7 @@
 <link rel="icon" type="image/svg+xml" id="favicon-link">
 <link rel="apple-touch-icon" id="apple-icon-link">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
 
   :root {
     --bg: #0a0a0a;
@@ -517,7 +517,7 @@
         <div class="vc-group" style="position:relative;overflow:visible;">
           <div class="vc-label" style="pointer-events:none;">VOL <span id="vol-display" style="color:var(--accent);font-size:9px;"></span></div>
           <div class="vc-btn" onclick="showVolSlider()" style="font-size:22px;background:none;border:none;">🔊</div>
-          <div class="vc-mid" onclick="toggleMute()" id="mute-btn" style="font-size:22px;background:none;border:none;">🔇</div>
+          <div class="vc-mid" onclick="toggleMute()" id="mute-btn" style="font-size:22px;background:none;border:none;">🔈<span style="position:relative;"><span id="mute-line" style="display:none;position:absolute;top:50%;left:-18px;width:22px;height:2px;background:var(--red);transform:rotate(-45deg);transform-origin:center;"></span></span></div>
           <!-- VOL SLIDER POPUP -->
           <div id="vol-slider-popup" style="display:none;position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:16px 10px;z-index:999;align-items:center;flex-direction:column;gap:8px;width:64px;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
             <span style="font-size:10px;color:var(--accent);font-weight:700;" id="vol-pct">0%</span>
@@ -536,13 +536,13 @@
       <div style="position:relative;width:170px;height:170px;flex-shrink:0;">
         <svg width="170" height="170" viewBox="0 0 220 220" style="position:absolute;top:0;left:0;">
           <!-- UP sector -->
-          <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_UP');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_UP');this.style.fill='#333'" ontouchend="stopRepeat();this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_UP');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_UP');this.style.fill='#333'" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
           <!-- RIGHT sector -->
-          <path d="M110,110 L205,15 A134,134 0 0,1 205,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_RIGHT');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_RIGHT');this.style.fill='#333'" ontouchend="stopRepeat();this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L205,15 A134,134 0 0,1 205,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_RIGHT');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_RIGHT');this.style.fill='#333'" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
           <!-- DOWN sector -->
-          <path d="M110,110 L205,205 A134,134 0 0,1 15,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_DOWN');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_DOWN');this.style.fill='#333'" ontouchend="stopRepeat();this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L205,205 A134,134 0 0,1 15,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_DOWN');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_DOWN');this.style.fill='#333'" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
           <!-- LEFT sector -->
-          <path d="M110,110 L15,205 A134,134 0 0,1 15,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_LEFT');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_LEFT');this.style.fill='#333'" ontouchend="stopRepeat();this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L15,205 A134,134 0 0,1 15,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_LEFT');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_LEFT');this.style.fill='#333'" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
           <!-- Arrow icons -->
           <text x="110" y="52" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▲</text>
           <text x="170" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▶</text>
@@ -718,6 +718,8 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+  document.addEventListener('contextmenu', e => e.preventDefault());
+
   // Prevent back button from closing app
   history.pushState(null, '', window.location.href);
   window.addEventListener('popstate', () => {
@@ -779,27 +781,45 @@
 
   function startRepeat(key, type, delta) {
     if (type === 'vol' && delta) {
+      // Vol: send immediately then repeat
+      sendKey(key);
       volLevel = Math.min(30, Math.max(0, volLevel + delta));
       localStorage.setItem('vol_level', volLevel);
       updateVolDisplay();
-    }
-    repeatTimer = setTimeout(() => {
-      repeatInterval = setInterval(() => {
-        sendKey(key);
-        if (type === 'vol' && delta) {
+      repeatTimer = setTimeout(() => {
+        repeatInterval = setInterval(() => {
+          sendKey(key);
           volLevel = Math.min(30, Math.max(0, volLevel + delta));
           localStorage.setItem('vol_level', volLevel);
           updateVolDisplay();
-        }
-      }, 300);
-    }, 700);
+        }, 300);
+      }, 700);
+    } else {
+      // Dpad/CH: on quick tap send once, on hold repeat
+      let fired = false;
+      repeatTimer = setTimeout(() => {
+        fired = true;
+        sendKey(key);
+        repeatInterval = setInterval(() => {
+          sendKey(key);
+        }, 300);
+      }, 400);
+      // store fired ref so stopRepeat can send single key on quick tap
+      window._repeatFired = () => fired;
+      window._repeatKey = key;
+    }
   }
 
   function stopRepeat() {
+    const shouldSend = window._repeatFired && !window._repeatFired() && window._repeatKey;
+    const keyToSend = window._repeatKey;
+    window._repeatFired = null;
+    window._repeatKey = null;
     clearTimeout(repeatTimer);
     clearInterval(repeatInterval);
     repeatTimer = null;
     repeatInterval = null;
+    if (shouldSend) sendKey(keyToSend);
   }
 
   updateVolDisplay();
@@ -808,7 +828,7 @@
   function toggleMute() {
     muted = !muted;
     sendKey('KEY_MUTE');
-    document.getElementById('mute-btn').textContent = muted ? '🔇' : '🔊';
+    document.getElementById('mute-btn').innerHTML = muted ? '🔈<span style="position:relative;"><span style="display:inline-block;position:absolute;top:50%;left:-18px;width:22px;height:2px;background:var(--red);transform:rotate(-45deg);transform-origin:center;"></span></span>' : '🔈';
   }
 
   function showSettings() {
