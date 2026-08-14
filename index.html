@@ -449,12 +449,38 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- SETTINGS PANEL -->
+<div id="settings-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
+  <div style="width:100%;max-width:320px;background:var(--surface);border-radius:16px;padding:20px;border:1px solid var(--border);display:flex;flex-direction:column;gap:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:16px;font-weight:700;">⚙ Settings</span>
+      <button onclick="closeSettings()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px;">CONNECTION</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">TV IP: <span id="settings-ip" style="color:var(--accent);"></span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button onclick="closeSettings();document.getElementById('overlay').style.display='flex';" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;padding:10px;cursor:pointer;">Switch TV</button>
+        <button onclick="disconnect();closeSettings();" style="background:transparent;border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:700;padding:10px;cursor:pointer;">Disconnect</button>
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:12px;">MOUSE SPEED</div>
+      <input type="range" id="sens-slider" min="0.5" max="5" step="0.5" value="1.5" oninput="updateSens(this.value)" style="width:100%;accent-color:var(--accent);">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-top:4px;"><span>Slow</span><span id="sens-val">1.5×</span><span>Fast</span></div>
+    </div>
+  </div>
+</div>
+
 <!-- REMOTE UI -->
 <div class="status-bar">
   <h1>📺 TV Remote</h1>
-  <div class="status-dot">
-    <div class="dot" id="dot"></div>
-    <span id="status-text">Connecting…</span>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="status-dot">
+      <div class="dot" id="dot"></div>
+      <span id="status-text">Connecting…</span>
+    </div>
+    <button onclick="showSettings()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:16px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;">⚙</button>
   </div>
 </div>
 
@@ -464,26 +490,18 @@
   <div class="section">
     <div class="top-row">
       <button class="btn power" onclick="sendKey('KEY_POWER')">
-        <span class="icon">⏻</span>Power
+        <span class="icon">⏻</span>
       </button>
       <button class="btn accent-btn" onclick="sendKey('KEY_SOURCE')">
-        <span class="icon">⬡</span>Source
+        <span class="icon">⬡</span>
       </button>
       <button class="btn" onclick="sendKey('KEY_MENU')">
-        <span class="icon">☰</span>Menu
+        <span class="icon">☰</span>
       </button>
     </div>
   </div>
 
-  <!-- STREAMING APPS -->
-  <div class="section">
-    <div class="stream-row">
-      <button class="stream-btn netflix" onclick="launchApp('11101200001')">NETFLIX</button>
-      <button class="stream-btn youtube" onclick="launchApp('111299001912')">YOUTUBE</button>
-      <button class="stream-btn prime" onclick="launchApp('11101000407')">PRIME</button>
-      <button class="stream-btn disney" onclick="launchApp('MCmYXNxgcu.DisneyPlus')">DISNEY+</button>
-    </div>
-  </div>
+  
 
   <!-- D-PAD + VOL/CH -->
   <div class="section">
@@ -492,9 +510,9 @@
       <!-- VOL -->
       <div class="vol-ch">
         <div class="vc-group">
-          <div class="vc-label">VOL</div>
+          <div class="vc-label" style="pointer-events:none;">VOL</div>
           <div class="vc-btn" onclick="sendKey('KEY_VOLUP')">＋</div>
-          <div class="vc-mid" onclick="sendKey('KEY_MUTE')">MUTE</div>
+          <div class="vc-mid" onclick="toggleMute()" id="mute-btn">🔊</div>
           <div class="vc-btn" onclick="sendKey('KEY_VOLDOWN')">－</div>
         </div>
       </div>
@@ -515,9 +533,9 @@
       <!-- CH -->
       <div class="vol-ch">
         <div class="vc-group">
-          <div class="vc-label">CH</div>
+          <div class="vc-label" style="pointer-events:none;">CH</div>
           <div class="vc-btn" onclick="sendKey('KEY_CHUP')">＋</div>
-          <div class="vc-mid" onclick="sendKey('KEY_GUIDE')">GUIDE</div>
+          <div class="vc-mid" onclick="sendKey('KEY_GUIDE')">📋</div>
           <div class="vc-btn" onclick="sendKey('KEY_CHDOWN')">－</div>
         </div>
       </div>
@@ -529,13 +547,14 @@
   <div class="section">
     <div class="nav-row">
       <button class="btn" onclick="sendKey('KEY_RETURN')">
-        <span class="icon">↩</span>Back
+        <span class="icon">←</span>
       </button>
       <button class="btn accent-btn" onclick="sendKey('KEY_HOME')">
-        <span class="icon">⌂</span>Home
+        <span class="icon">⌂</span>
       </button>
-      <button class="btn" onclick="sendKey('KEY_INFO')">
-        <span class="icon">ℹ</span>Info
+      <button class="btn accent-btn" id="tp-toggle-btn" onclick="toggleTrackpad()">
+        <span class="icon" id="tp-toggle-icon">🖱</span>
+      </button>
       </button>
     </div>
   </div>
@@ -549,10 +568,7 @@
       <!-- hidden input to pull up phone keyboard -->
       <input id="kb-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="position:absolute;opacity:0;width:1px;height:1px;border:none;outline:none;">
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
-      <button class="btn" onclick="sendKey('KEY_DEL')" style="padding:12px;">⌫ Delete</button>
-      <button class="btn accent-btn" onclick="sendKey('KEY_ENTER')" style="padding:12px;">✓ Click</button>
-    </div>
+    
   </div>
 
 </div>
@@ -678,6 +694,50 @@
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  let muted = false;
+  function toggleMute() {
+    muted = !muted;
+    sendKey('KEY_MUTE');
+    document.getElementById('mute-btn').textContent = muted ? '🔇' : '🔊';
+  }
+
+  function showSettings() {
+    document.getElementById('settings-ip').textContent = TV_IP;
+    document.getElementById('sens-slider').value = tpSens;
+    document.getElementById('sens-val').textContent = tpSens + '×';
+    document.getElementById('settings-panel').style.display = 'flex';
+  }
+  function closeSettings() {
+    document.getElementById('settings-panel').style.display = 'none';
+  }
+  function updateSens(val) {
+    tpSens = parseFloat(val);
+    localStorage.setItem('tp_sens', tpSens);
+    document.getElementById('sens-val').textContent = tpSens + '×';
+  }
+
+  function showSettings() {
+    document.getElementById('settings-ip').textContent = TV_IP;
+    document.getElementById('sens-slider').value = tpSens;
+    document.getElementById('sens-val').textContent = tpSens + '×';
+    document.getElementById('settings-panel').style.display = 'flex';
+  }
+  function closeSettings() {
+    document.getElementById('settings-panel').style.display = 'none';
+  }
+  function showSettings2() {
+    document.getElementById('overlay-title').textContent = 'Switch TV';
+    document.getElementById('overlay-desc').textContent = 'Enter new TV IP address.';
+    document.getElementById('disconnect-btn').style.display = 'none';
+    document.getElementById('overlay-cancel').style.display = 'block';
+    document.getElementById('overlay').style.display = 'flex';
+  }
+  function updateSens(val) {
+    tpSens = parseFloat(val);
+    localStorage.setItem('tp_sens', tpSens);
+    document.getElementById('sens-val').textContent = tpSens + '×';
+  }
 
   // ─── TRACKPAD ─────────────────────────────────────────────
   (function initTrackpad() {
@@ -842,55 +902,70 @@
       connect();
     }
 
-    // Focus hidden keyboard input on load (phone keyboard ready)
-    document.getElementById('kb-input').focus();
+    
   };
 
   // ─── TRACKPAD ─────────────────────────────────────────────
+  let trackpadActive = false;
+  let tpSens = parseFloat(localStorage.getItem('tp_sens') || '1.5');
+
+  function toggleTrackpad() {
+    trackpadActive = !trackpadActive;
+    const pad = document.getElementById('trackpad');
+    const btn = document.getElementById('tp-toggle-btn');
+    const icon = document.getElementById('tp-toggle-icon');
+    if (trackpadActive) {
+      pad.style.borderColor = 'var(--accent)';
+      btn.style.background = 'var(--accent)';
+      btn.style.color = '#000';
+      icon.textContent = '🖱';
+      // activate mouse mode on TV — send multiple moves to force cursor to appear
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        const wake = [1,2,3,2,1,0,-1,-2,-1,0];
+        wake.forEach((v, i) => {
+          setTimeout(() => {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({ method:'ms.remote.control', params:{ Cmd:'Move', Position:{ x:v, y:v, Time:Date.now() }, TypeOfRemote:'ProcessMouseDevice' }}));
+            }
+          }, i * 50);
+        });
+      }
+      showToast('Mouse ON — slide to move, tap to click');
+    } else {
+      pad.style.borderColor = '';
+      btn.style.background = '';
+      btn.style.color = '';
+      icon.textContent = '🖱';
+      showToast('Mouse OFF');
+    }
+  }
+
   (function() {
     const pad    = document.getElementById('trackpad');
-    const kb     = document.getElementById('kb-input');
     const ripple = document.getElementById('tp-ripple');
     const hint   = document.getElementById('tp-hint');
-    const SENS   = 0.5;
     let lx = null, ly = null, totalMove = 0, isTap = false;
     let ax = 0, ay = 0;
 
     function move(dx, dy) {
-      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      if (!trackpadActive || !ws || ws.readyState !== WebSocket.OPEN) return;
       ws.send(JSON.stringify({ method:'ms.remote.control', params:{ Cmd:'Move', Position:{ x:Math.round(dx), y:Math.round(dy), Time:Date.now() }, TypeOfRemote:'ProcessMouseDevice' }}));
     }
     function click() {
-      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      if (!trackpadActive || !ws || ws.readyState !== WebSocket.OPEN) return;
       ws.send(JSON.stringify({ method:'ms.remote.control', params:{ Cmd:'LeftClick', Position:{ x:0, y:0, Time:Date.now() }, TypeOfRemote:'ProcessMouseDevice' }}));
-      ripple.style.opacity = '0.3'; ripple.style.transform = 'scale(1)';
-      setTimeout(() => { ripple.style.opacity='0'; ripple.style.transform='scale(0)'; }, 280);
+      ripple.style.opacity='0.3'; ripple.style.transform='scale(1)';
+      setTimeout(()=>{ ripple.style.opacity='0'; ripple.style.transform='scale(0)'; }, 280);
     }
 
-    // Touch
-    pad.addEventListener('touchstart', e => { e.preventDefault(); const t=e.touches[0]; lx=t.clientX; ly=t.clientY; totalMove=0; isTap=true; ax=0; ay=0; hint.style.display='none'; }, {passive:false});
-    pad.addEventListener('touchmove',  e => { e.preventDefault(); const t=e.touches[0]; const dx=(t.clientX-lx)*SENS, dy=(t.clientY-ly)*SENS; totalMove+=Math.abs(t.clientX-lx)+Math.abs(t.clientY-ly); if(totalMove>6) isTap=false; ax+=dx; ay+=dy; const ix=Math.trunc(ax), iy=Math.trunc(ay); if(ix||iy){move(ix,iy); ax-=ix; ay-=iy;} lx=t.clientX; ly=t.clientY; }, {passive:false});
-    pad.addEventListener('touchend',   e => { e.preventDefault(); if(isTap){ click(); kb.focus(); } lx=null; ly=null; }, {passive:false});
+    pad.addEventListener('touchstart', e=>{ e.preventDefault(); if(!trackpadActive) return; const t=e.touches[0]; lx=t.clientX; ly=t.clientY; totalMove=0; isTap=true; ax=0; ay=0; hint.style.display='none'; },{passive:false});
+    pad.addEventListener('touchmove',  e=>{ e.preventDefault(); if(!trackpadActive||lx===null) return; const t=e.touches[0]; const dx=(t.clientX-lx)*tpSens, dy=(t.clientY-ly)*tpSens; totalMove+=Math.abs(t.clientX-lx)+Math.abs(t.clientY-ly); if(totalMove>6) isTap=false; ax+=dx; ay+=dy; const ix=Math.trunc(ax),iy=Math.trunc(ay); if(ix||iy){move(ix,iy);ax-=ix;ay-=iy;} lx=t.clientX; ly=t.clientY; },{passive:false});
+    pad.addEventListener('touchend',   e=>{ e.preventDefault(); if(!trackpadActive) return; if(isTap) click(); lx=null; ly=null; },{passive:false});
 
-    // Mouse (laptop testing)
     let md=false;
-    pad.addEventListener('mousedown', e => { md=true; lx=e.clientX; ly=e.clientY; totalMove=0; isTap=true; ax=0; ay=0; hint.style.display='none'; });
-    window.addEventListener('mousemove', e => { if(!md) return; const dx=(e.clientX-lx)*SENS, dy=(e.clientY-ly)*SENS; totalMove+=Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly); if(totalMove>6) isTap=false; ax+=dx; ay+=dy; const ix=Math.trunc(ax), iy=Math.trunc(ay); if(ix||iy){move(ix,iy); ax-=ix; ay-=iy;} lx=e.clientX; ly=e.clientY; });
-    window.addEventListener('mouseup', () => { if(md && isTap) click(); md=false; });
-
-    // Keyboard → stream to TV
-    kb.addEventListener('input', async () => {
-      const val = kb.value; kb.value = '';
-      for (const ch of val) {
-        if (!ws || ws.readyState !== WebSocket.OPEN) break;
-        ws.send(JSON.stringify({ method:'ms.channel.emit', params:{ event:'ed.sendText', to:'host', data:{ text:ch, action_type:'WRITE' }}}));
-        await new Promise(r => setTimeout(r, 50));
-      }
-    });
-    kb.addEventListener('keydown', e => {
-      if (e.key === 'Backspace') { e.preventDefault(); sendKey('KEY_DEL'); }
-      if (e.key === 'Enter')     { e.preventDefault(); sendKey('KEY_ENTER'); }
-    });
+    pad.addEventListener('mousedown', e=>{ if(!trackpadActive) return; md=true; lx=e.clientX; ly=e.clientY; totalMove=0; isTap=true; ax=0; ay=0; hint.style.display='none'; });
+    window.addEventListener('mousemove', e=>{ if(!md||!trackpadActive) return; const dx=(e.clientX-lx)*tpSens, dy=(e.clientY-ly)*tpSens; totalMove+=Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly); if(totalMove>6) isTap=false; ax+=dx; ay+=dy; const ix=Math.trunc(ax),iy=Math.trunc(ay); if(ix||iy){move(ix,iy);ax-=ix;ay-=iy;} lx=e.clientX; ly=e.clientY; });
+    window.addEventListener('mouseup', ()=>{ if(md&&isTap&&trackpadActive) click(); md=false; lx=null; });
   })();
 
   // ─── ICON + FAVICON + MANIFEST ────────────────────────────
