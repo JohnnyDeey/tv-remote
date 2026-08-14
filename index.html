@@ -465,10 +465,15 @@
       </div>
     </div>
     <div style="border-top:1px solid var(--border);padding-top:12px;">
-      <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:12px;">MOUSE SPEED</div>
-      <input type="range" id="sens-slider" min="0.5" max="5" step="0.5" value="1.5" oninput="updateSens(this.value)" style="width:100%;accent-color:var(--accent);">
-      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-top:4px;"><span>Slow</span><span id="sens-val">1.5×</span><span>Fast</span></div>
-    </div>
+        <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:12px;">MOUSE SPEED</div>
+        <input type="range" id="sens-slider" min="1" max="10" step="0.5" value="4" oninput="updateSens(this.value)" style="width:100%;accent-color:var(--accent);">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-top:4px;"><span>Slow</span><span id="sens-val">4×</span><span>Fast</span></div>
+      </div>
+      <div style="border-top:1px solid var(--border);padding-top:12px;">
+        <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:12px;">CURSOR SIZE</div>
+        <input type="range" id="cursor-slider" min="1" max="5" step="1" value="3" oninput="updateCursor(this.value)" style="width:100%;accent-color:var(--accent);">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-top:4px;"><span>Small</span><span id="cursor-val">3</span><span>Large</span></div>
+      </div>
   </div>
 </div>
 
@@ -517,17 +522,25 @@
         </div>
       </div>
 
-      <!-- D-PAD -->
-      <div class="dpad-wrap">
-        <div class="dpad-empty"></div>
-        <div class="dpad-btn" onclick="sendKey('KEY_UP')">▲</div>
-        <div class="dpad-empty"></div>
-        <div class="dpad-btn" onclick="sendKey('KEY_LEFT')">◀</div>
-        <div class="dpad-btn dpad-ok" onclick="sendKey('KEY_ENTER')">OK</div>
-        <div class="dpad-btn" onclick="sendKey('KEY_RIGHT')">▶</div>
-        <div class="dpad-empty"></div>
-        <div class="dpad-btn" onclick="sendKey('KEY_DOWN')">▼</div>
-        <div class="dpad-empty"></div>
+      <!-- D-PAD CIRCLE -->
+      <div style="position:relative;width:220px;height:220px;flex-shrink:0;">
+        <svg width="220" height="220" viewBox="0 0 220 220" style="position:absolute;top:0;left:0;">
+          <!-- UP sector -->
+          <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="sendKey('KEY_UP')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="this.style.fill='#333'" ontouchend="this.style.fill='#1e1e1e'"/>
+          <!-- RIGHT sector -->
+          <path d="M110,110 L205,15 A134,134 0 0,1 205,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="sendKey('KEY_RIGHT')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="this.style.fill='#333'" ontouchend="this.style.fill='#1e1e1e'"/>
+          <!-- DOWN sector -->
+          <path d="M110,110 L205,205 A134,134 0 0,1 15,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="sendKey('KEY_DOWN')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="this.style.fill='#333'" ontouchend="this.style.fill='#1e1e1e'"/>
+          <!-- LEFT sector -->
+          <path d="M110,110 L15,205 A134,134 0 0,1 15,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="sendKey('KEY_LEFT')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="this.style.fill='#333'" ontouchend="this.style.fill='#1e1e1e'"/>
+          <!-- Arrow icons -->
+          <text x="110" y="52" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▲</text>
+          <text x="170" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▶</text>
+          <text x="110" y="180" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▼</text>
+          <text x="50" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">◀</text>
+        </svg>
+        <!-- OK button in centre -->
+        <div onclick="sendKey('KEY_ENTER')" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:68px;height:68px;border-radius:50%;background:var(--accent-dim);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px;font-weight:800;cursor:pointer;z-index:2;user-select:none;">OK</div>
       </div>
 
       <!-- CH -->
@@ -562,7 +575,7 @@
   <!-- TRACKPAD -->
   <div class="section">
     <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-align:center;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Trackpad · slide to move · tap to click</div>
-    <div id="trackpad" style="width:100%;height:180px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);position:relative;touch-action:none;display:flex;align-items:center;justify-content:center;overflow:hidden;user-select:none;-webkit-user-select:none;">
+    <div id="trackpad" style="width:100%;height:252px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);position:relative;touch-action:none;display:flex;align-items:center;justify-content:center;overflow:hidden;user-select:none;-webkit-user-select:none;">
       <span id="tp-hint" style="font-size:12px;color:var(--border);pointer-events:none;text-align:center;line-height:1.8;"> Slide to move cursor<br>Tap to click</span>
       <div id="tp-ripple" style="position:absolute;width:60px;height:60px;border-radius:50%;background:var(--accent);opacity:0;transform:scale(0);pointer-events:none;transition:transform 0.25s,opacity 0.25s;"></div>
       <!-- hidden input to pull up phone keyboard -->
@@ -715,6 +728,26 @@
     tpSens = parseFloat(val);
     localStorage.setItem('tp_sens', tpSens);
     document.getElementById('sens-val').textContent = tpSens + '×';
+  }
+
+  let cursorSize = parseInt(localStorage.getItem('cursor_size') || '3');
+  function updateCursor(val) {
+    cursorSize = parseInt(val);
+    localStorage.setItem('cursor_size', cursorSize);
+    document.getElementById('cursor-val').textContent = cursorSize;
+    // Send cursor size to TV via mouse move with size parameter
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({ method:'ms.remote.control', params:{ Cmd:'Move', Position:{ x:0, y:0, Time:Date.now() }, TypeOfRemote:'ProcessMouseDevice' }}));
+    }
+  }
+
+  function showSettings() {
+    document.getElementById('settings-ip').textContent = TV_IP;
+    document.getElementById('sens-slider').value = tpSens;
+    document.getElementById('sens-val').textContent = tpSens + '×';
+    document.getElementById('cursor-slider').value = cursorSize;
+    document.getElementById('cursor-val').textContent = cursorSize;
+    document.getElementById('settings-panel').style.display = 'flex';
   }
 
   function showSettings() {
