@@ -11,7 +11,7 @@
 <link rel="icon" type="image/svg+xml" id="favicon-link">
 <link rel="apple-touch-icon" id="apple-icon-link">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
 
   :root {
     --bg: #0a0a0a;
@@ -41,7 +41,6 @@
     align-items: center;
     padding: 12px 12px 32px;
     overflow-x: hidden;
-    overflow-y: auto;
   }
 
   /* STATUS BAR */
@@ -516,10 +515,10 @@
       <!-- VOL -->
       <div class="vol-ch">
         <div class="vc-group">
-          <div class="vc-label" style="pointer-events:none;">VOL</div>
-          <div class="vc-btn" onclick="sendKey('KEY_VOLUP')">＋</div>
+          <div class="vc-label" style="pointer-events:none;">VOL <span id="vol-display" style="color:var(--accent);font-size:9px;"></span></div>
+          <div class="vc-btn" id="btn-volup" onmousedown="startRepeat('KEY_VOLUP','vol',1)" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_VOLUP','vol',1)" ontouchend="stopRepeat()">＋</div>
           <div class="vc-mid" onclick="toggleMute()" id="mute-btn">🔊</div>
-          <div class="vc-btn" onclick="sendKey('KEY_VOLDOWN')">－</div>
+          <div class="vc-btn" id="btn-voldn" onmousedown="startRepeat('KEY_VOLDOWN','vol',-1)" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_VOLDOWN','vol',-1)" ontouchend="stopRepeat()">－</div>
         </div>
       </div>
 
@@ -527,13 +526,13 @@
       <div style="position:relative;width:170px;height:170px;flex-shrink:0;">
         <svg width="170" height="170" viewBox="0 0 220 220" style="position:absolute;top:0;left:0;">
           <!-- UP sector -->
-          <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="sendKey('KEY_UP')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="this.style.fill='#333'" ontouchend="this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_UP');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_UP');this.style.fill='#333'" ontouchend="stopRepeat();this.style.fill='#1e1e1e'"/>
           <!-- RIGHT sector -->
-          <path d="M110,110 L205,15 A134,134 0 0,1 205,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="sendKey('KEY_RIGHT')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="this.style.fill='#333'" ontouchend="this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L205,15 A134,134 0 0,1 205,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_RIGHT');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_RIGHT');this.style.fill='#333'" ontouchend="stopRepeat();this.style.fill='#1e1e1e'"/>
           <!-- DOWN sector -->
-          <path d="M110,110 L205,205 A134,134 0 0,1 15,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="sendKey('KEY_DOWN')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="this.style.fill='#333'" ontouchend="this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L205,205 A134,134 0 0,1 15,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_DOWN');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_DOWN');this.style.fill='#333'" ontouchend="stopRepeat();this.style.fill='#1e1e1e'"/>
           <!-- LEFT sector -->
-          <path d="M110,110 L15,205 A134,134 0 0,1 15,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="sendKey('KEY_LEFT')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="this.style.fill='#333'" ontouchend="this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L15,205 A134,134 0 0,1 15,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_LEFT');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_LEFT');this.style.fill='#333'" ontouchend="stopRepeat();this.style.fill='#1e1e1e'"/>
           <!-- Arrow icons -->
           <text x="110" y="52" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▲</text>
           <text x="170" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▶</text>
@@ -548,9 +547,9 @@
       <div class="vol-ch">
         <div class="vc-group">
           <div class="vc-label" style="pointer-events:none;">CH</div>
-          <div class="vc-btn" onclick="sendKey('KEY_CHUP')">＋</div>
+          <div class="vc-btn" onmousedown="startRepeat('KEY_CHUP')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_CHUP')" ontouchend="stopRepeat()">＋</div>
           <div class="vc-mid" onclick="sendKey('KEY_GUIDE')">📋</div>
-          <div class="vc-btn" onclick="sendKey('KEY_CHDOWN')">－</div>
+          <div class="vc-btn" onmousedown="startRepeat('KEY_CHDOWN')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_CHDOWN')" ontouchend="stopRepeat()">－</div>
         </div>
       </div>
 
@@ -577,7 +576,7 @@
   <div class="section">
     <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-align:center;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Trackpad · slide to move · tap to click</div>
     <div id="trackpad" style="width:100%;height:252px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);position:relative;touch-action:none;display:flex;align-items:center;justify-content:center;overflow:hidden;user-select:none;-webkit-user-select:none;">
-      <span id="tp-hint" style="font-size:12px;color:var(--border);pointer-events:none;text-align:center;line-height:1.8;"> Slide to move cursor<br>Tap to click</span>
+      <span id="tp-hint" style="display:none;"></span>
       <div id="tp-ripple" style="position:absolute;width:60px;height:60px;border-radius:50%;background:var(--accent);opacity:0;transform:scale(0);pointer-events:none;transition:transform 0.25s,opacity 0.25s;"></div>
       <!-- hidden input to pull up phone keyboard -->
       <input id="kb-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="position:absolute;opacity:0;width:1px;height:1px;border:none;outline:none;">
@@ -709,7 +708,54 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  let muted = false;
+  // ─── LONG PRESS REPEAT ────────────────────────────────────
+  let repeatTimer = null;
+  let repeatInterval = null;
+  let volLevel = parseInt(localStorage.getItem('vol_level') || '10');
+
+  function updateVolDisplay() {
+    const bar = '█'.repeat(volLevel) + '░'.repeat(Math.max(0, 20 - volLevel));
+    const pct = Math.round((volLevel / 30) * 100);
+    const el = document.getElementById('vol-display');
+    if (el) el.textContent = pct + '%';
+    if (volLevel === 0) {
+      document.getElementById('mute-btn').textContent = '🔇';
+      muted = true;
+    } else {
+      document.getElementById('mute-btn').textContent = '🔊';
+      muted = false;
+    }
+  }
+
+  function startRepeat(key, type, delta) {
+    sendKey(key);
+    if (type === 'vol' && delta) {
+      volLevel = Math.min(30, Math.max(0, volLevel + delta));
+      localStorage.setItem('vol_level', volLevel);
+      updateVolDisplay();
+    }
+    repeatTimer = setTimeout(() => {
+      repeatInterval = setInterval(() => {
+        sendKey(key);
+        if (type === 'vol' && delta) {
+          volLevel = Math.min(30, Math.max(0, volLevel + delta));
+          localStorage.setItem('vol_level', volLevel);
+          updateVolDisplay();
+        }
+      }, 150);
+    }, 400);
+  }
+
+  function stopRepeat() {
+    clearTimeout(repeatTimer);
+    clearInterval(repeatInterval);
+    repeatTimer = null;
+    repeatInterval = null;
+  }
+
+  updateVolDisplay();
+
+  
   function toggleMute() {
     muted = !muted;
     sendKey('KEY_MUTE');
@@ -928,10 +974,6 @@
     if (savedIp) {
       TV_IP = savedIp;
       document.getElementById('ip-input').value = savedIp;
-    }
-
-    // If IP already saved, skip overlay and connect
-    if (savedIp) {
       document.getElementById('overlay').style.display = 'none';
       connect();
     }
