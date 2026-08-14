@@ -508,6 +508,16 @@
 
   
 
+  <!-- STREAMING APPS -->
+  <div class="section">
+    <div class="stream-row">
+      <button class="stream-btn netflix" onclick="launchApp('3201907018807')">NETFLIX</button>
+      <button class="stream-btn youtube" onclick="launchApp('111299001912')">YOUTUBE</button>
+      <button class="stream-btn prime" onclick="launchApp('3201910019365')">PRIME</button>
+      <button class="stream-btn disney" onclick="launchApp('3202204027038')">DISNEY+</button>
+    </div>
+  </div>
+
   <!-- D-PAD + VOL/CH -->
   <div class="section">
     <div class="dpad-section">
@@ -583,7 +593,7 @@
   </div>
 
   <!-- TRACKPAD -->
-  <div class="section">
+  <div class="section" id="trackpad-section" style="display:none;">
     <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-align:center;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Trackpad · slide to move · tap to click</div>
     <div id="trackpad" style="width:100%;height:252px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);position:relative;touch-action:none;display:flex;align-items:center;justify-content:center;overflow:hidden;user-select:none;-webkit-user-select:none;">
       <span id="tp-hint" style="display:none;"></span>
@@ -593,6 +603,8 @@
     </div>
     
   </div>
+
+
 
 </div>
 
@@ -705,18 +717,35 @@
       showToast('Not connected');
       return;
     }
-    const payload = JSON.stringify({
+    ws.send(JSON.stringify({ 
       method: 'ms.channel.emit',
-      params: {
-        event: 'ed.apps.launch',
-        to: 'host',
-        data: { appId, action_type: 'DEEP_LINK' }
-      }
-    });
-    ws.send(payload);
+      params: { event: 'ed.apps.launch', to: 'host', data: { appId, action_type: 'NATIVE_LAUNCH' }}
+    }));
+    setTimeout(() => {
+      ws.send(JSON.stringify({ 
+        method: 'ms.channel.emit',
+        params: { event: 'ed.apps.launch', to: 'host', data: { appId, action_type: 'DEEP_LINK' }}
+      }));
+    }, 500);
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function getApps() {
+    if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected'); return; }
+    ws.send(JSON.stringify({ method:'ms.channel.emit', params:{ event:'ed.installedApp.get', to:'host' }}));
+    ws.addEventListener('message', function handler(evt) {
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg.event === 'ed.installedApp.get') {
+          const apps = msg.data.data;
+          const list = apps.map(a => `${a.name}: ${a.appId}`).join('\n');
+          document.getElementById('apps-list').innerText = list;
+          ws.removeEventListener('message', handler);
+        }
+      } catch(e) {}
+    });
+  }
 
   document.addEventListener('contextmenu', e => e.preventDefault());
 
@@ -1057,8 +1086,10 @@
   function toggleTrackpad() {
     trackpadActive = !trackpadActive;
     const pad = document.getElementById('trackpad');
+    const padSection = document.getElementById('trackpad-section');
     const btn = document.getElementById('tp-toggle-btn');
     const icon = document.getElementById('tp-toggle-icon');
+    if (padSection) padSection.style.display = trackpadActive ? 'block' : 'none';
     if (trackpadActive) {
       pad.style.borderColor = 'var(--accent)';
       btn.style.background = 'var(--accent)';
