@@ -294,7 +294,7 @@
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: 10px;
-    overflow: hidden;
+    overflow: visible;
   }
   .vc-label {
     font-size: 9px;
@@ -514,11 +514,21 @@
 
       <!-- VOL -->
       <div class="vol-ch">
-        <div class="vc-group">
+        <div class="vc-group" style="position:relative;overflow:visible;">
           <div class="vc-label" style="pointer-events:none;">VOL <span id="vol-display" style="color:var(--accent);font-size:9px;"></span></div>
-          <div class="vc-btn" id="btn-volup" onmousedown="startRepeat('KEY_VOLUP','vol',1)" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_VOLUP','vol',1)" ontouchend="stopRepeat()">＋</div>
-          <div class="vc-mid" onclick="toggleMute()" id="mute-btn">🔊</div>
-          <div class="vc-btn" id="btn-voldn" onmousedown="startRepeat('KEY_VOLDOWN','vol',-1)" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_VOLDOWN','vol',-1)" ontouchend="stopRepeat()">－</div>
+          <div class="vc-btn" onclick="showVolSlider()" style="font-size:22px;background:none;border:none;">🔊</div>
+          <div class="vc-mid" onclick="toggleMute()" id="mute-btn" style="font-size:22px;background:none;border:none;">🔇</div>
+          <!-- VOL SLIDER POPUP -->
+          <div id="vol-slider-popup" style="display:none;position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:16px 10px;z-index:999;align-items:center;flex-direction:column;gap:8px;width:64px;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+            <span style="font-size:10px;color:var(--accent);font-weight:700;" id="vol-pct">0%</span>
+            <input type="range" id="vol-slider" min="0" max="30" step="1" value="10"
+              orient="vertical"
+              style="writing-mode:vertical-lr;direction:rtl;width:32px;height:130px;accent-color:var(--accent);cursor:pointer;"
+              oninput="onVolSlide(this.value)"
+              ontouchend="hideVolSlider()"
+              onmouseup="hideVolSlider()">
+            <span style="font-size:18px;pointer-events:none;">🔈</span>
+          </div>
         </div>
       </div>
 
@@ -708,10 +718,50 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+  // Prevent back button from closing app
+  history.pushState(null, '', window.location.href);
+  window.addEventListener('popstate', () => {
+    history.pushState(null, '', window.location.href);
+  });
+
   // ─── LONG PRESS REPEAT ────────────────────────────────────
   let repeatTimer = null;
   let repeatInterval = null;
   let volLevel = parseInt(localStorage.getItem('vol_level') || '10');
+  let volSliderTimer = null;
+
+  function showVolSlider() {
+    const popup = document.getElementById('vol-slider-popup');
+    popup.style.display = 'flex';
+    document.getElementById('vol-slider').value = volLevel;
+    document.getElementById('vol-pct').textContent = Math.round((volLevel/30)*100) + '%';
+    clearTimeout(volSliderTimer);
+    volSliderTimer = setTimeout(() => {
+      popup.style.display = 'none';
+    }, 3000);
+  }
+
+  function hideVolSlider() {
+    clearTimeout(volSliderTimer);
+    volSliderTimer = setTimeout(() => {
+      document.getElementById('vol-slider-popup').style.display = 'none';
+    }, 1500);
+  }
+
+  function onVolSlide(val) {
+    const newVol = parseInt(val);
+    const diff = newVol - volLevel;
+    const key = diff > 0 ? 'KEY_VOLUP' : 'KEY_VOLDOWN';
+    const steps = Math.abs(diff);
+    for (let i = 0; i < steps; i++) {
+      setTimeout(() => sendKey(key), i * 120);
+    }
+    volLevel = newVol;
+    localStorage.setItem('vol_level', volLevel);
+    document.getElementById('vol-pct').textContent = Math.round((volLevel/30)*100) + '%';
+    updateVolDisplay();
+    clearTimeout(volSliderTimer);
+  }
 
   function updateVolDisplay() {
     const bar = '█'.repeat(volLevel) + '░'.repeat(Math.max(0, 20 - volLevel));
@@ -728,7 +778,6 @@
   }
 
   function startRepeat(key, type, delta) {
-    sendKey(key);
     if (type === 'vol' && delta) {
       volLevel = Math.min(30, Math.max(0, volLevel + delta));
       localStorage.setItem('vol_level', volLevel);
@@ -742,8 +791,8 @@
           localStorage.setItem('vol_level', volLevel);
           updateVolDisplay();
         }
-      }, 150);
-    }, 400);
+      }, 300);
+    }, 700);
   }
 
   function stopRepeat() {
