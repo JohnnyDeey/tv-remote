@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#0a0a0a">
+<title>TV Remote</title>
+<link rel="manifest" href="#" id="manifest-link">
+<link rel="icon" type="image/svg+xml" id="favicon-link">
+<link rel="apple-touch-icon" id="apple-icon-link">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #151515;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --accent: #4fc3f7;
+    --accent-dim: #1a3a4a;
+    --text: #f0f0f0;
+    --text-dim: #888;
+    --btn: #1e1e1e;
+    --btn-hover: #2a2a2a;
+    --btn-active: #333;
+    --red: #ef5350;
+    --green: #66bb6a;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 12px 32px;
+    overflow-x: hidden;
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 12px;
+  }
+  .status-bar h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text);
+  }
+  .status-dot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    transition: background 0.3s;
+  }
+  .dot.connected { background: var(--green); }
+
+  /* REMOTE BODY */
+  .remote {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* SECTIONS */
+  .section {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 12px;
+    border: 1px solid var(--border);
+  }
+
+  /* TRACKPAD */
+  .trackpad-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .trackpad-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-align: center;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .trackpad {
+    width: 100%;
+    height: 160px;
+    background: var(--surface2);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    position: relative;
+    cursor: pointer;
+    touch-action: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .trackpad:active { border-color: var(--accent); }
+  .trackpad-hint {
+    font-size: 12px;
+    color: var(--border);
+    pointer-events: none;
+    user-select: none;
+    text-align: center;
+    line-height: 1.8;
+  }
+  .trackpad-ripple {
+    position: absolute;
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+  }
+  .trackpad-ripple.show {
+    opacity: 0.25;
+    transform: scale(1);
+  }
+  .trackpad-btns {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .tp-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    padding: 10px;
+    cursor: pointer;
+    text-align: center;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.1s, transform 0.1s;
+  }
+  .tp-btn:active { background: var(--btn-active); transform: scale(0.96); }
+  .tp-btn.click-btn {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  /* TOP ROW - POWER + SOURCE + SETTINGS */
+  .top-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* BUTTON BASE */
+  .btn {
+    background: var(--btn);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    user-select: none;
+    transition: background 0.1s, transform 0.1s;
+    -webkit-user-select: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn:active {
+    background: var(--btn-active);
+    transform: scale(0.95);
+  }
+  .btn .icon {
+    font-size: 20px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .btn.power { color: var(--red); }
+  .btn.power .icon { color: var(--red); }
+  .btn.accent-btn { border-color: var(--accent-dim); }
+  .btn.accent-btn .icon { color: var(--accent); }
+
+  /* STREAMING ROW */
+  .stream-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .stream-btn {
+    background: var(--btn);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    padding: 10px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.1s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+  .stream-btn:active { background: var(--btn-active); transform: scale(0.95); }
+  .stream-btn.netflix { color: #e50914; }
+  .stream-btn.youtube { color: #ff0000; }
+  .stream-btn.prime { color: #00a8e0; }
+  .stream-btn.disney { color: #113ccf; }
+
+  /* D-PAD */
+  .dpad-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+  .dpad-wrap {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+    gap: 4px;
+    max-width: 180px;
+    margin: 0 auto;
+  }
+  .dpad-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    aspect-ratio: 1;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.1s, transform 0.1s;
+  }
+  .dpad-btn:active { background: var(--btn-active); transform: scale(0.92); }
+  .dpad-ok {
+    background: var(--accent-dim);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+  .dpad-empty { visibility: hidden; }
+
+  /* VOL/CH CONTROLS */
+  .vol-ch {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 64px;
+  }
+  .vc-group {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .vc-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  .vc-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    font-size: 18px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.1s;
+    color: var(--text);
+  }
+  .vc-btn:active { background: var(--btn-active); }
+  .vc-mid {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 6px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .vc-mid:active { background: var(--btn-active); }
+
+  /* NAV ROW - BACK HOME MENU */
+  .nav-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* NUMBER PAD */
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .num-btn {
+    background: var(--btn);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    padding: 14px 8px;
+    font-size: 18px;
+    font-weight: 500;
+    text-align: center;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.1s, transform 0.1s;
+  }
+  .num-btn:active { background: var(--btn-active); transform: scale(0.95); }
+  .num-btn.zero { grid-column: 2; }
+  .num-btn.del-btn { color: var(--text-dim); font-size: 14px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #222;
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    transition: transform 0.3s ease;
+    z-index: 999;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* CONNECT OVERLAY */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 100;
+    padding: 24px;
+  }
+  .overlay h2 { font-size: 20px; font-weight: 700; }
+  .overlay p { font-size: 14px; color: var(--text-dim); text-align: center; line-height: 1.6; }
+  .overlay-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 32px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .overlay-btn:active { opacity: 0.8; }
+  .overlay-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 15px;
+    outline: none;
+    width: 100%;
+    max-width: 280px;
+    text-align: center;
+  }
+  .overlay-input:focus { border-color: var(--accent); }
+  .overlay-label { font-size: 13px; color: var(--text-dim); }
+  .spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<!-- CONNECT OVERLAY -->
+<div class="overlay" id="overlay">
+  <div style="font-size:40px">📺</div>
+  <h2>TV Remote</h2>
+  <p>Enter your Samsung TV IP address to connect.<br>Your TV must be on the same WiFi.</p>
+  <label class="overlay-label">TV IP Address</label>
+  <input class="overlay-input" id="ip-input" type="text" value="192.168.68.106" placeholder="192.168.68.106" inputmode="decimal">
+  <button class="overlay-btn" onclick="startConnect()">Connect to TV</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- REMOTE UI -->
+<div class="status-bar">
+  <h1>📺 TV Remote</h1>
+  <div class="status-dot">
+    <div class="dot" id="dot"></div>
+    <span id="status-text">Connecting…</span>
+  </div>
+</div>
+
+<div class="remote">
+
+  <!-- TOP ROW: POWER / SOURCE / SETTINGS -->
+  <div class="section">
+    <div class="top-row">
+      <button class="btn power" onclick="sendKey('KEY_POWER')">
+        <span class="icon">⏻</span>Power
+      </button>
+      <button class="btn accent-btn" onclick="sendKey('KEY_SOURCE')">
+        <span class="icon">⬡</span>Source
+      </button>
+      <button class="btn" onclick="sendKey('KEY_MENU')">
+        <span class="icon">☰</span>Menu
+      </button>
+    </div>
+  </div>
+
+  <!-- STREAMING APPS -->
+  <div class="section">
+    <div class="stream-row">
+      <button class="stream-btn netflix" onclick="launchApp('11101200001')">NETFLIX</button>
+      <button class="stream-btn youtube" onclick="launchApp('111299001912')">YOUTUBE</button>
+      <button class="stream-btn prime" onclick="launchApp('11101000407')">PRIME</button>
+      <button class="stream-btn disney" onclick="launchApp('MCmYXNxgcu.DisneyPlus')">DISNEY+</button>
+    </div>
+  </div>
+
+  <!-- D-PAD + VOL/CH -->
+  <div class="section">
+    <div class="dpad-section">
+
+      <!-- VOL -->
+      <div class="vol-ch">
+        <div class="vc-group">
+          <div class="vc-label">VOL</div>
+          <div class="vc-btn" onclick="sendKey('KEY_VOLUP')">＋</div>
+          <div class="vc-mid" onclick="sendKey('KEY_MUTE')">MUTE</div>
+          <div class="vc-btn" onclick="sendKey('KEY_VOLDOWN')">－</div>
+        </div>
+      </div>
+
+      <!-- D-PAD -->
+      <div class="dpad-wrap">
+        <div class="dpad-empty"></div>
+        <div class="dpad-btn" onclick="sendKey('KEY_UP')">▲</div>
+        <div class="dpad-empty"></div>
+        <div class="dpad-btn" onclick="sendKey('KEY_LEFT')">◀</div>
+        <div class="dpad-btn dpad-ok" onclick="sendKey('KEY_ENTER')">OK</div>
+        <div class="dpad-btn" onclick="sendKey('KEY_RIGHT')">▶</div>
+        <div class="dpad-empty"></div>
+        <div class="dpad-btn" onclick="sendKey('KEY_DOWN')">▼</div>
+        <div class="dpad-empty"></div>
+      </div>
+
+      <!-- CH -->
+      <div class="vol-ch">
+        <div class="vc-group">
+          <div class="vc-label">CH</div>
+          <div class="vc-btn" onclick="sendKey('KEY_CHUP')">＋</div>
+          <div class="vc-mid" onclick="sendKey('KEY_GUIDE')">GUIDE</div>
+          <div class="vc-btn" onclick="sendKey('KEY_CHDOWN')">－</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BACK / HOME / INFO -->
+  <div class="section">
+    <div class="nav-row">
+      <button class="btn" onclick="sendKey('KEY_RETURN')">
+        <span class="icon">↩</span>Back
+      </button>
+      <button class="btn accent-btn" onclick="sendKey('KEY_HOME')">
+        <span class="icon">⌂</span>Home
+      </button>
+      <button class="btn" onclick="sendKey('KEY_INFO')">
+        <span class="icon">ℹ</span>Info
+      </button>
+    </div>
+  </div>
+
+  <!-- TRACKPAD -->
+  <div class="section">
+    <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-align:center;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Trackpad · slide to move · tap to click</div>
+    <div id="trackpad" style="width:100%;height:180px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);position:relative;touch-action:none;display:flex;align-items:center;justify-content:center;overflow:hidden;user-select:none;-webkit-user-select:none;">
+      <span id="tp-hint" style="font-size:12px;color:var(--border);pointer-events:none;text-align:center;line-height:1.8;"> Slide to move cursor<br>Tap to click</span>
+      <div id="tp-ripple" style="position:absolute;width:60px;height:60px;border-radius:50%;background:var(--accent);opacity:0;transform:scale(0);pointer-events:none;transition:transform 0.25s,opacity 0.25s;"></div>
+      <!-- hidden input to pull up phone keyboard -->
+      <input id="kb-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="position:absolute;opacity:0;width:1px;height:1px;border:none;outline:none;">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+      <button class="btn" onclick="sendKey('KEY_DEL')" style="padding:12px;">⌫ Delete</button>
+      <button class="btn accent-btn" onclick="sendKey('KEY_ENTER')" style="padding:12px;">✓ Click</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ─── CONFIG ───────────────────────────────────────────────
+  let TV_IP = '192.168.68.106';
+  let ws = null;
+  let token = localStorage.getItem('samsung_tv_token') || '';
+  let connected = false;
+  let reconnectTimer = null;
+
+  const APP_NAME = btoa('MyTVRemote');
+
+  // ─── OVERLAY ──────────────────────────────────────────────
+  function startConnect() {
+    const input = document.getElementById('ip-input').value.trim();
+    if (!input) return showToast('Enter a valid IP address');
+    TV_IP = input;
+    localStorage.setItem('tv_ip', TV_IP);
+    document.getElementById('overlay').style.display = 'none';
+    connect();
+  }
+
+  // ─── WEBSOCKET ────────────────────────────────────────────
+  function connect() {
+    setStatus(false, 'Connecting…');
+    if (ws) { try { ws.close(); } catch(e){} }
+
+    const url = token
+      ? `wss://${TV_IP}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}&token=${token}`
+      : `wss://${TV_IP}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}`;
+
+    try {
+      ws = new WebSocket(url);
+    } catch(e) {
+      setStatus(false, 'Failed');
+      scheduleReconnect();
+      return;
+    }
+
+    ws.onopen = () => {
+      console.log('WS open');
+    };
+
+    ws.onmessage = (evt) => {
+      try {
+        const msg = JSON.parse(evt.data);
+        if (msg.event === 'ms.channel.connect') {
+          connected = true;
+          if (msg.data && msg.data.token) {
+            token = msg.data.token;
+            localStorage.setItem('samsung_tv_token', token);
+          }
+          setStatus(true, 'Connected');
+          showToast('✓ Connected to TV');
+        } else if (msg.event === 'ms.channel.unauthorized') {
+          showToast('⚠ Check TV – allow the remote connection');
+        } else if (msg.event === 'ms.channel.timeOut') {
+          connected = false;
+          setStatus(false, 'Timed out');
+          scheduleReconnect();
+        }
+      } catch(e) {}
+    };
+
+    ws.onerror = () => {
+      connected = false;
+      setStatus(false, 'Error – retrying');
+    };
+
+    ws.onclose = () => {
+      connected = false;
+      setStatus(false, 'Disconnected');
+      scheduleReconnect();
+    };
+  }
+
+  function scheduleReconnect() {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(connect, 5000);
+  }
+
+  function setStatus(ok, text) {
+    document.getElementById('dot').className = 'dot' + (ok ? ' connected' : '');
+    document.getElementById('status-text').textContent = text;
+  }
+
+  // ─── SEND KEY ─────────────────────────────────────────────
+  function sendKey(key) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      showToast('Not connected – retrying…');
+      connect();
+      return;
+    }
+    const payload = JSON.stringify({
+      method: 'ms.remote.control',
+      params: {
+        Cmd: 'Click',
+        DataOfCmd: key,
+        Option: 'false',
+        TypeOfRemote: 'SendRemoteKey'
+      }
+    });
+    ws.send(payload);
+  }
+
+  // ─── LAUNCH APP ───────────────────────────────────────────
+  function launchApp(appId) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      showToast('Not connected');
+      return;
+    }
+    const payload = JSON.stringify({
+      method: 'ms.channel.emit',
+      params: {
+        event: 'ed.apps.launch',
+        to: 'host',
+        data: { appId, action_type: 'DEEP_LINK' }
+      }
+    });
+    ws.send(payload);
+  }
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ─── TRACKPAD ─────────────────────────────────────────────
+  (function initTrackpad() {
+    const pad = document.getElementById('trackpad');
+    const kbInput = document.getElementById('kb-input');
+    const ripple = document.getElementById('ripple');
+
+    let lastX = null, lastY = null;
+    let isTap = false;
+    let tapTimer = null;
+    let moveThreshold = 6; // px — below this = tap, above = drag
+    let totalMove = 0;
+    const SENSITIVITY = 0.4; // lower = slower cursor movement
+
+    // Accumulated fractional movement
+    let accumX = 0, accumY = 0;
+
+    function sendMouseMove(dx, dy) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({
+        method: 'ms.remote.control',
+        params: {
+          Cmd: 'Move',
+          Position: { x: Math.round(dx), y: Math.round(dy), Time: Date.now() },
+          TypeOfRemote: 'ProcessMouseDevice'
+        }
+      }));
+    }
+
+    function sendMouseClick() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({
+        method: 'ms.remote.control',
+        params: {
+          Cmd: 'LeftClick',
+          Position: { x: 0, y: 0, Time: Date.now() },
+          TypeOfRemote: 'ProcessMouseDevice'
+        }
+      }));
+      // ripple feedback
+      ripple.classList.add('show');
+      setTimeout(() => ripple.classList.remove('show'), 300);
+    }
+
+    pad.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const t = e.touches[0];
+      lastX = t.clientX;
+      lastY = t.clientY;
+      totalMove = 0;
+      isTap = true;
+      accumX = 0; accumY = 0;
+    }, { passive: false });
+
+    pad.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const t = e.touches[0];
+      const dx = (t.clientX - lastX) * SENSITIVITY;
+      const dy = (t.clientY - lastY) * SENSITIVITY;
+      totalMove += Math.abs(t.clientX - lastX) + Math.abs(t.clientY - lastY);
+      if (totalMove > moveThreshold) isTap = false;
+
+      accumX += dx;
+      accumY += dy;
+
+      // Only send when we have at least 1px of integer movement
+      const ix = Math.trunc(accumX);
+      const iy = Math.trunc(accumY);
+      if (ix !== 0 || iy !== 0) {
+        sendMouseMove(ix, iy);
+        accumX -= ix;
+        accumY -= iy;
+      }
+
+      lastX = t.clientX;
+      lastY = t.clientY;
+    }, { passive: false });
+
+    pad.addEventListener('touchend', e => {
+      e.preventDefault();
+      if (isTap) sendMouseClick();
+      lastX = null; lastY = null;
+    }, { passive: false });
+
+    // Also handle mouse (for laptop testing)
+    let mouseDown = false;
+    pad.addEventListener('mousedown', e => {
+      mouseDown = true;
+      lastX = e.clientX; lastY = e.clientY;
+      totalMove = 0; isTap = true;
+      accumX = 0; accumY = 0;
+    });
+    pad.addEventListener('mousemove', e => {
+      if (!mouseDown) return;
+      const dx = (e.clientX - lastX) * SENSITIVITY;
+      const dy = (e.clientY - lastY) * SENSITIVITY;
+      totalMove += Math.abs(e.clientX - lastX) + Math.abs(e.clientY - lastY);
+      if (totalMove > moveThreshold) isTap = false;
+      accumX += dx; accumY += dy;
+      const ix = Math.trunc(accumX), iy = Math.trunc(accumY);
+      if (ix !== 0 || iy !== 0) { sendMouseMove(ix, iy); accumX -= ix; accumY -= iy; }
+      lastX = e.clientX; lastY = e.clientY;
+    });
+    pad.addEventListener('mouseup', () => {
+      if (isTap) sendMouseClick();
+      mouseDown = false;
+    });
+
+    // ── KEYBOARD: focus hidden input to open phone keyboard ──
+    // When TV opens a text field, user taps trackpad area to focus
+    // hidden input — phone keyboard pops up — keystrokes stream to TV
+    kbInput.addEventListener('input', async e => {
+      const val = kbInput.value;
+      if (!val) return;
+      kbInput.value = ''; // clear immediately
+
+      for (const char of val) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) break;
+        ws.send(JSON.stringify({
+          method: 'ms.channel.emit',
+          params: {
+            event: 'ed.sendText',
+            to: 'host',
+            data: { text: char, action_type: 'WRITE' }
+          }
+        }));
+        await sleep(50);
+      }
+    });
+
+    kbInput.addEventListener('keydown', e => {
+      if (e.key === 'Backspace') { e.preventDefault(); sendKey('KEY_DEL'); }
+      if (e.key === 'Enter')     { e.preventDefault(); sendKey('KEY_ENTER'); }
+    });
+
+    // Tap anywhere on trackpad section focuses the hidden input
+    // so phone keyboard is always ready
+    pad.addEventListener('click', () => kbInput.focus());
+  })();
+
+  // ─── TOAST ────────────────────────────────────────────────
+  let toastTimer = null;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ─── INIT ─────────────────────────────────────────────────
+  window.onload = () => {
+    const savedIp = localStorage.getItem('tv_ip');
+    if (savedIp) {
+      TV_IP = savedIp;
+      document.getElementById('ip-input').value = savedIp;
+    }
+
+    // If IP already saved, skip overlay and connect
+    if (savedIp) {
+      document.getElementById('overlay').style.display = 'none';
+      connect();
+    }
+
+    // Focus hidden keyboard input on load (phone keyboard ready)
+    document.getElementById('kb-input').focus();
+  };
+
+  // ─── TRACKPAD ─────────────────────────────────────────────
+  (function() {
+    const pad    = document.getElementById('trackpad');
+    const kb     = document.getElementById('kb-input');
+    const ripple = document.getElementById('tp-ripple');
+    const hint   = document.getElementById('tp-hint');
+    const SENS   = 0.5;
+    let lx = null, ly = null, totalMove = 0, isTap = false;
+    let ax = 0, ay = 0;
+
+    function move(dx, dy) {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ method:'ms.remote.control', params:{ Cmd:'Move', Position:{ x:Math.round(dx), y:Math.round(dy), Time:Date.now() }, TypeOfRemote:'ProcessMouseDevice' }}));
+    }
+    function click() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ method:'ms.remote.control', params:{ Cmd:'LeftClick', Position:{ x:0, y:0, Time:Date.now() }, TypeOfRemote:'ProcessMouseDevice' }}));
+      ripple.style.opacity = '0.3'; ripple.style.transform = 'scale(1)';
+      setTimeout(() => { ripple.style.opacity='0'; ripple.style.transform='scale(0)'; }, 280);
+    }
+
+    // Touch
+    pad.addEventListener('touchstart', e => { e.preventDefault(); const t=e.touches[0]; lx=t.clientX; ly=t.clientY; totalMove=0; isTap=true; ax=0; ay=0; hint.style.display='none'; }, {passive:false});
+    pad.addEventListener('touchmove',  e => { e.preventDefault(); const t=e.touches[0]; const dx=(t.clientX-lx)*SENS, dy=(t.clientY-ly)*SENS; totalMove+=Math.abs(t.clientX-lx)+Math.abs(t.clientY-ly); if(totalMove>6) isTap=false; ax+=dx; ay+=dy; const ix=Math.trunc(ax), iy=Math.trunc(ay); if(ix||iy){move(ix,iy); ax-=ix; ay-=iy;} lx=t.clientX; ly=t.clientY; }, {passive:false});
+    pad.addEventListener('touchend',   e => { e.preventDefault(); if(isTap){ click(); kb.focus(); } lx=null; ly=null; }, {passive:false});
+
+    // Mouse (laptop testing)
+    let md=false;
+    pad.addEventListener('mousedown', e => { md=true; lx=e.clientX; ly=e.clientY; totalMove=0; isTap=true; ax=0; ay=0; hint.style.display='none'; });
+    window.addEventListener('mousemove', e => { if(!md) return; const dx=(e.clientX-lx)*SENS, dy=(e.clientY-ly)*SENS; totalMove+=Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly); if(totalMove>6) isTap=false; ax+=dx; ay+=dy; const ix=Math.trunc(ax), iy=Math.trunc(ay); if(ix||iy){move(ix,iy); ax-=ix; ay-=iy;} lx=e.clientX; ly=e.clientY; });
+    window.addEventListener('mouseup', () => { if(md && isTap) click(); md=false; });
+
+    // Keyboard → stream to TV
+    kb.addEventListener('input', async () => {
+      const val = kb.value; kb.value = '';
+      for (const ch of val) {
+        if (!ws || ws.readyState !== WebSocket.OPEN) break;
+        ws.send(JSON.stringify({ method:'ms.channel.emit', params:{ event:'ed.sendText', to:'host', data:{ text:ch, action_type:'WRITE' }}}));
+        await new Promise(r => setTimeout(r, 50));
+      }
+    });
+    kb.addEventListener('keydown', e => {
+      if (e.key === 'Backspace') { e.preventDefault(); sendKey('KEY_DEL'); }
+      if (e.key === 'Enter')     { e.preventDefault(); sendKey('KEY_ENTER'); }
+    });
+  })();
+
+  // ─── ICON + FAVICON + MANIFEST ────────────────────────────
+  // Draw icon on canvas so we get a real PNG (works for favicon + apple-touch-icon)
+  function makeIconDataUrl(size) {
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    // Background rounded rect
+    const r = size * 0.22;
+    ctx.beginPath();
+    ctx.moveTo(r, 0); ctx.lineTo(size-r, 0);
+    ctx.quadraticCurveTo(size, 0, size, r);
+    ctx.lineTo(size, size-r);
+    ctx.quadraticCurveTo(size, size, size-r, size);
+    ctx.lineTo(r, size); ctx.quadraticCurveTo(0, size, 0, size-r);
+    ctx.lineTo(0, r); ctx.quadraticCurveTo(0, 0, r, 0);
+    ctx.closePath();
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fill();
+    // TV screen shape
+    const pad = size * 0.12;
+    const sw = size - pad*2, sh = sw * 0.62;
+    const sx = pad, sy = size * 0.18;
+    const sr = size * 0.06;
+    ctx.beginPath();
+    ctx.moveTo(sx+sr, sy); ctx.lineTo(sx+sw-sr, sy);
+    ctx.quadraticCurveTo(sx+sw, sy, sx+sw, sy+sr);
+    ctx.lineTo(sx+sw, sy+sh-sr);
+    ctx.quadraticCurveTo(sx+sw, sy+sh, sx+sw-sr, sy+sh);
+    ctx.lineTo(sx+sr, sy+sh); ctx.quadraticCurveTo(sx, sy+sh, sx, sy+sh-sr);
+    ctx.lineTo(sx, sy+sr); ctx.quadraticCurveTo(sx, sy, sx+sr, sy);
+    ctx.closePath();
+    ctx.fillStyle = '#1e1e1e';
+    ctx.fill();
+    ctx.strokeStyle = '#4fc3f7';
+    ctx.lineWidth = size * 0.03;
+    ctx.stroke();
+    // Screen glow dot
+    ctx.beginPath();
+    ctx.arc(sx+sw*0.5, sy+sh*0.5, size*0.08, 0, Math.PI*2);
+    ctx.fillStyle = '#4fc3f7';
+    ctx.fill();
+    // Stand
+    const standW = sw * 0.28, standH = size * 0.08;
+    const standX = sx + (sw - standW)/2, standY = sy + sh;
+    ctx.fillStyle = '#2a2a2a';
+    ctx.fillRect(standX, standY, standW, standH);
+    ctx.fillRect(standX - standW*0.3, standY + standH - size*0.025, standW*1.6, size*0.025);
+    return c.toDataURL('image/png');
+  }
+
+  const icon192 = makeIconDataUrl(192);
+  const icon512 = makeIconDataUrl(512);
+  const icon32  = makeIconDataUrl(32);
+
+  // Favicon
+  document.getElementById('favicon-link').href = icon32;
+
+  // Apple touch icon (used when saved to iOS home screen)
+  document.getElementById('apple-icon-link').href = icon192;
+
+  // PWA Manifest
+  const manifest = {
+    name: 'TV Remote',
+    short_name: 'TV Remote',
+    description: 'Samsung TV Remote Control',
+    start_url: '.',
+    display: 'standalone',
+    background_color: '#0a0a0a',
+    theme_color: '#0a0a0a',
+    orientation: 'portrait',
+    icons: [
+      { src: icon192, sizes: '192x192', type: 'image/png' },
+      { src: icon512, sizes: '512x512', type: 'image/png' }
+    ]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+  document.getElementById('manifest-link').href = URL.createObjectURL(blob);
+</script>
+
+</body>
+</html>
