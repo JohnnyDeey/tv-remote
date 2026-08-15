@@ -982,7 +982,7 @@
 
   function digiKey(key) {
     if (!digiWs || digiWs.readyState !== WebSocket.OPEN) {
-      showToast('Start bridge.py on laptop first');
+      showToast('DIGI bridge not connected');
       return;
     }
     const keycode = DIGI_KEYS[key];
@@ -994,7 +994,7 @@
     const text = input.value.trim();
     if (!text) return;
     if (!digiWs || digiWs.readyState !== WebSocket.OPEN) {
-      showToast('Start bridge.py on laptop first');
+      showToast('DIGI bridge not connected');
       return;
     }
     digiWs.send(JSON.stringify({ action:'text', text }));
