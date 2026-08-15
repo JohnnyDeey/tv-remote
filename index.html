@@ -437,7 +437,7 @@
 <body>
 
 <!-- CONNECT OVERLAY -->
-<div class="overlay" id="overlay">
+<div class="overlay" id="overlay" style="display:none;">
   <div style="font-size:40px">📺</div>
   <h2>TV Remote</h2>
   <p>Enter your Samsung TV IP address to connect.<br>Your TV must be on the same WiFi.</p>
@@ -458,6 +458,7 @@
     </div>
     <div style="border-top:1px solid var(--border);padding-top:12px;">
       <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px;">CONNECTION</div>
+      <a id="cert-link" href="https://192.168.68.106:8002" target="_blank" style="display:block;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--accent);font-size:11px;font-weight:700;padding:8px;text-align:center;margin-bottom:8px;text-decoration:none;">🔐 Trust Certificate (tap if not connecting)</a>
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">TV IP: <span id="settings-ip" style="color:var(--accent);"></span></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
         <button onclick="closeSettings();document.getElementById('overlay').style.display='flex';" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;padding:10px;cursor:pointer;">Switch TV</button>
@@ -479,7 +480,7 @@
 
 <!-- REMOTE UI -->
 <div class="status-bar">
-  <h1>📺 TV Remote</h1>
+  <h1 id="app-title">📺 TV Remote</h1>
   <div style="display:flex;align-items:center;gap:10px;">
     <div class="status-dot">
       <div class="dot" id="dot"></div>
@@ -489,16 +490,27 @@
   </div>
 </div>
 
-<div class="remote">
+<!-- DEVICE SWITCHER -->
+<div style="width:100%;max-width:380px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+  <button id="btn-samsung" onclick="switchDevice('samsung')" style="padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;">📺 Samsung TV</button>
+  <button id="btn-digi" onclick="switchDevice('digi')" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;">📡 DIGI Decoder</button>
+</div>
 
+<div class="remote" id="samsung-remote">
   <!-- TOP ROW: POWER / SOURCE / SETTINGS -->
   <div class="section">
     <div class="top-row">
       <button class="btn power" onclick="sendKey('KEY_POWER')">
-        <span class="icon">⏻</span>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 3v9"/>
+          <path d="M6.3 5.3a9 9 0 1 0 11.4 0"/>
+        </svg>
       </button>
       <button class="btn accent-btn" onclick="sendKey('KEY_SOURCE')">
-        <span class="icon">⬡</span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
+          <rect x="2" y="7" width="20" height="15" rx="2"/>
+          <polyline points="17 2 12 7 7 2"/>
+        </svg>
       </button>
       <button class="btn" onclick="sendKey('KEY_MENU')">
         <span class="icon">☰</span>
@@ -508,15 +520,7 @@
 
   
 
-  <!-- STREAMING APPS -->
-  <div class="section">
-    <div class="stream-row">
-      <button class="stream-btn netflix" onclick="launchApp('3201907018807')">NETFLIX</button>
-      <button class="stream-btn youtube" onclick="launchApp('111299001912')">YOUTUBE</button>
-      <button class="stream-btn prime" onclick="launchApp('3201910019365')">PRIME</button>
-      <button class="stream-btn disney" onclick="launchApp('3202204027038')">DISNEY+</button>
-    </div>
-  </div>
+  
 
   <!-- D-PAD + VOL/CH -->
   <div class="section">
@@ -526,8 +530,20 @@
       <div class="vol-ch">
         <div class="vc-group" style="position:relative;overflow:visible;">
           <div class="vc-label" style="pointer-events:none;">VOL <span id="vol-display" style="color:var(--accent);font-size:9px;"></span></div>
-          <div class="vc-btn" onclick="showVolSlider()" style="font-size:22px;background:none;border:none;">🔊</div>
-          <div class="vc-mid" onclick="toggleMute()" id="mute-btn" style="font-size:22px;background:none;border:none;">🔈<span style="position:relative;"><span id="mute-line" style="display:none;position:absolute;top:50%;left:-18px;width:22px;height:2px;background:var(--red);transform:rotate(-45deg);transform-origin:center;"></span></span></div>
+          <div class="vc-btn" onclick="showVolSlider()" style="background:none;border:none;display:flex;align-items:center;justify-content:center;padding:10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+            </svg>
+          </div>
+          <div class="vc-mid" onclick="toggleMute()" id="mute-btn" style="background:none;border:none;display:flex;align-items:center;justify-content:center;padding:10px;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round" id="mute-svg">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <line x1="23" y1="9" x2="17" y2="15" stroke="#ef5350"/>
+              <line x1="17" y1="9" x2="23" y2="15" stroke="#ef5350"/>
+            </svg>
+          </div>
           <!-- VOL SLIDER POPUP -->
           <div id="vol-slider-popup" style="display:none;position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:16px 10px;z-index:999;align-items:center;flex-direction:column;gap:8px;width:64px;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
             <span style="font-size:10px;color:var(--accent);font-weight:700;" id="vol-pct">0%</span>
@@ -580,15 +596,69 @@
   <div class="section">
     <div class="nav-row">
       <button class="btn" onclick="sendKey('KEY_RETURN')">
-        <span class="icon">←</span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
       </button>
       <button class="btn accent-btn" onclick="sendKey('KEY_HOME')">
-        <span class="icon">⌂</span>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+          <polyline points="9 21 9 12 15 12 15 21"/>
+        </svg>
       </button>
-      <button class="btn accent-btn" id="tp-toggle-btn" onclick="toggleTrackpad()">
-        <span class="icon" id="tp-toggle-icon">🖱</span>
+      <button class="btn" onclick="sendKey('KEY_EXIT')" style="color:var(--red);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2" stroke-linecap="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
       </button>
+    </div>
+  </div>
+
+  <!-- TV MEDIA CONTROLS -->
+  <div class="section">
+    <div style="display:flex;justify-content:center;margin-bottom:8px;">
+      <span id="tv-skip-display" style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;"></span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
+      <button class="btn" onclick="sendKey('KEY_REWIND')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
       </button>
+      <button class="btn" id="tv-btn-rew"
+        onmousedown="startTvMediaHold('rew')" onmouseup="stopTvMediaHold()" onmouseleave="stopTvMediaHold()"
+        ontouchstart="event.preventDefault();startTvMediaHold('rew')" ontouchend="event.preventDefault();stopTvMediaHold()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></svg>
+      </button>
+      <button class="btn accent-btn" onclick="sendKey('KEY_PLAY_BACK')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+      </button>
+      <button class="btn" id="tv-btn-fwd"
+        onmousedown="startTvMediaHold('fwd')" onmouseup="stopTvMediaHold()" onmouseleave="stopTvMediaHold()"
+        ontouchstart="event.preventDefault();startTvMediaHold('fwd')" ontouchend="event.preventDefault();stopTvMediaHold()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="13 19 22 12 13 5 13 19"/><polygon points="2 19 11 12 2 5 2 19"/></svg>
+      </button>
+      <button class="btn" onclick="sendKey('KEY_FF')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- TV NUMBER PAD -->
+  <div class="section">
+    <div class="numpad">
+      <button class="num-btn" onclick="sendKey('KEY_1')" style="font-size:16px;line-height:1.2;">1<br><span style="font-size:8px;color:var(--text-dim);">.,!?</span></button>
+      <button class="num-btn" onclick="sendKey('KEY_2')" style="font-size:16px;line-height:1.2;">2<br><span style="font-size:8px;color:var(--text-dim);">ABC</span></button>
+      <button class="num-btn" onclick="sendKey('KEY_3')" style="font-size:16px;line-height:1.2;">3<br><span style="font-size:8px;color:var(--text-dim);">DEF</span></button>
+      <button class="num-btn" onclick="sendKey('KEY_4')" style="font-size:16px;line-height:1.2;">4<br><span style="font-size:8px;color:var(--text-dim);">GHI</span></button>
+      <button class="num-btn" onclick="sendKey('KEY_5')" style="font-size:16px;line-height:1.2;">5<br><span style="font-size:8px;color:var(--text-dim);">JKL</span></button>
+      <button class="num-btn" onclick="sendKey('KEY_6')" style="font-size:16px;line-height:1.2;">6<br><span style="font-size:8px;color:var(--text-dim);">MNO</span></button>
+      <button class="num-btn" onclick="sendKey('KEY_7')" style="font-size:16px;line-height:1.2;">7<br><span style="font-size:8px;color:var(--text-dim);">PQRS</span></button>
+      <button class="num-btn" onclick="sendKey('KEY_8')" style="font-size:16px;line-height:1.2;">8<br><span style="font-size:8px;color:var(--text-dim);">TUV</span></button>
+      <button class="num-btn" onclick="sendKey('KEY_9')" style="font-size:16px;line-height:1.2;">9<br><span style="font-size:8px;color:var(--text-dim);">WXYZ</span></button>
+      <button class="num-btn" onclick="sendKey('KEY_DEL')">⌫</button>
+      <button class="num-btn zero" onclick="sendKey('KEY_0')" style="font-size:16px;line-height:1.2;">0<br><span style="font-size:8px;color:var(--text-dim);">+</span></button>
+      <button class="num-btn" onclick="sendKey('KEY_ENTER')" style="color:var(--accent);font-weight:800;">OK</button>
     </div>
   </div>
 
@@ -605,6 +675,149 @@
   </div>
 
 
+
+</div>
+</div>
+
+<!-- DIGI DECODER REMOTE -->
+<div class="remote" id="digi-remote" style="display:none;">
+
+  <!-- KEYBOARD INPUT -->
+  <div class="section">
+    <div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:8px;">⌨ TYPE DIRECTLY</div>
+    <div style="display:flex;gap:8px;">
+      <input id="digi-text-input" type="text" placeholder="Type here → sends to decoder…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+        style="flex:1;background:var(--surface2);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;color:var(--text);font-size:15px;outline:none;">
+      <button onclick="digiSendText()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;">Send</button>
+    </div>
+    
+  </div>
+
+  <!-- TOP ROW -->
+  <div class="section">
+    <div class="top-row">
+      <button class="btn power" onclick="digiKey('power')"><span class="icon">⏻</span></button>
+      <button class="btn accent-btn" onclick="digiKey('home')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+          <polyline points="9 21 9 12 15 12 15 21"/>
+        </svg>
+      </button>
+      <button class="btn" onclick="digiKey('menu')"><span class="icon">☰</span></button>
+    </div>
+  </div>
+
+  <!-- DPAD + VOL + CH -->
+  <div class="section">
+    <div class="dpad-section">
+      <!-- VOL -->
+      <div class="vol-ch">
+        <div class="vc-group">
+          <div class="vc-label" style="pointer-events:none;">VOL</div>
+          <div class="vc-btn" onclick="digiKey('vol_up')">＋</div>
+          <div class="vc-mid" onclick="digiKey('mute')" style="display:flex;align-items:center;justify-content:center;padding:10px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <line x1="23" y1="9" x2="17" y2="15" stroke="#ef5350"/>
+              <line x1="17" y1="9" x2="23" y2="15" stroke="#ef5350"/>
+            </svg>
+          </div>
+          <div class="vc-btn" onclick="digiKey('vol_down')">－</div>
+        </div>
+      </div>
+
+      <!-- DPAD CIRCLE -->
+      <div style="position:relative;width:170px;height:170px;flex-shrink:0;">
+        <svg width="170" height="170" viewBox="0 0 220 220" style="position:absolute;top:0;left:0;">
+          <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="digiKey('up')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333'" ontouchend="event.preventDefault();this.style.fill='#1e1e1e';digiKey('up')"/>
+          <path d="M110,110 L205,15 A134,134 0 0,1 205,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="digiKey('right')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333'" ontouchend="event.preventDefault();this.style.fill='#1e1e1e';digiKey('right')"/>
+          <path d="M110,110 L205,205 A134,134 0 0,1 15,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="digiKey('down')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333'" ontouchend="event.preventDefault();this.style.fill='#1e1e1e';digiKey('down')"/>
+          <path d="M110,110 L15,205 A134,134 0 0,1 15,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="digiKey('left')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333'" ontouchend="event.preventDefault();this.style.fill='#1e1e1e';digiKey('left')"/>
+          <text x="110" y="52" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▲</text>
+          <text x="170" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▶</text>
+          <text x="110" y="180" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▼</text>
+          <text x="50" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">◀</text>
+        </svg>
+        <div onclick="digiKey('ok')" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:68px;height:68px;border-radius:50%;background:var(--accent-dim);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px;font-weight:800;cursor:pointer;z-index:2;user-select:none;">OK</div>
+      </div>
+
+      <!-- CH -->
+      <div class="vol-ch">
+        <div class="vc-group">
+          <div class="vc-label" style="pointer-events:none;">CH</div>
+          <div class="vc-btn" onclick="digiKey('ch_up')">＋</div>
+          <div class="vc-mid" onclick="digiKey('guide')">📋</div>
+          <div class="vc-btn" onclick="digiKey('ch_down')">－</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV ROW -->
+  <div class="section">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button class="btn" onclick="digiKey('back')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <button class="btn" onclick="digiKey('exit')" style="color:var(--red);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2" stroke-linecap="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- MEDIA CONTROLS -->
+  <div class="section">
+    <div style="display:flex;justify-content:center;margin-bottom:8px;">
+      <span id="skip-display" style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;"></span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
+      <button class="btn" onclick="digiKey('prev')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+      </button>
+      <button class="btn" id="btn-rew"
+        onmousedown="startMediaHold('rew')" onmouseup="stopMediaHold()" onmouseleave="stopMediaHold()"
+        ontouchstart="event.preventDefault();startMediaHold('rew')" ontouchend="event.preventDefault();stopMediaHold()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></svg>
+      </button>
+      <button class="btn accent-btn" onclick="digiKey('play_pause')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
+          <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+        </svg>
+      </button>
+      <button class="btn" id="btn-fwd"
+        onmousedown="startMediaHold('fwd')" onmouseup="stopMediaHold()" onmouseleave="stopMediaHold()"
+        ontouchstart="event.preventDefault();startMediaHold('fwd')" ontouchend="event.preventDefault();stopMediaHold()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="13 19 22 12 13 5 13 19"/><polygon points="2 19 11 12 2 5 2 19"/></svg>
+      </button>
+      <button class="btn" onclick="digiKey('next')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- NUMBER PAD -->
+  <div class="section">
+    <div class="numpad">
+      <button class="num-btn" onclick="digiKey('1')" style="font-size:16px;line-height:1.2;">1<br><span style="font-size:8px;color:var(--text-dim);">.,!?</span></button>
+      <button class="num-btn" onclick="digiKey('2')" style="font-size:16px;line-height:1.2;">2<br><span style="font-size:8px;color:var(--text-dim);">ABC</span></button>
+      <button class="num-btn" onclick="digiKey('3')" style="font-size:16px;line-height:1.2;">3<br><span style="font-size:8px;color:var(--text-dim);">DEF</span></button>
+      <button class="num-btn" onclick="digiKey('4')" style="font-size:16px;line-height:1.2;">4<br><span style="font-size:8px;color:var(--text-dim);">GHI</span></button>
+      <button class="num-btn" onclick="digiKey('5')" style="font-size:16px;line-height:1.2;">5<br><span style="font-size:8px;color:var(--text-dim);">JKL</span></button>
+      <button class="num-btn" onclick="digiKey('6')" style="font-size:16px;line-height:1.2;">6<br><span style="font-size:8px;color:var(--text-dim);">MNO</span></button>
+      <button class="num-btn" onclick="digiKey('7')" style="font-size:16px;line-height:1.2;">7<br><span style="font-size:8px;color:var(--text-dim);">PQRS</span></button>
+      <button class="num-btn" onclick="digiKey('8')" style="font-size:16px;line-height:1.2;">8<br><span style="font-size:8px;color:var(--text-dim);">TUV</span></button>
+      <button class="num-btn" onclick="digiKey('9')" style="font-size:16px;line-height:1.2;">9<br><span style="font-size:8px;color:var(--text-dim);">WXYZ</span></button>
+      <button class="num-btn" onclick="digiKey('del')">⌫</button>
+      <button class="num-btn zero" onclick="digiKey('0')" style="font-size:16px;line-height:1.2;">0<br><span style="font-size:8px;color:var(--text-dim);">+</span></button>
+      <button class="num-btn" onclick="digiKey('ok')" style="color:var(--accent);font-weight:800;">OK</button>
+    </div>
+  </div>
 
 </div>
 
@@ -659,7 +872,6 @@
             localStorage.setItem('samsung_tv_token', token);
           }
           setStatus(true, 'Connected');
-          showToast('✓ Connected to TV');
         } else if (msg.event === 'ms.channel.unauthorized') {
           showToast('⚠ Check TV – allow the remote connection');
         } else if (msg.event === 'ms.channel.timeOut') {
@@ -731,6 +943,180 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+  // ─── DIGI DECODER ─────────────────────────────────────────
+  let currentDevice = localStorage.getItem('last_device') || 'samsung';
+  const BRIDGE = 'ws://192.168.68.111:8765';
+  let digiWs = null;
+
+  const DIGI_KEYS = {
+    up:19, down:20, left:21, right:22, ok:23, back:4, home:3,
+    menu:82, power:26, vol_up:24, vol_down:25, mute:164, del:67,
+    ch_up:166, ch_down:167, guide:172, play_pause:85,
+    rewind:89, fast_forward:90, exit:4,
+    prev:88, next:87, stop:86,
+    '0':7,'1':8,'2':9,'3':10,'4':11,'5':12,'6':13,'7':14,'8':15,'9':16
+  };
+
+  function switchDevice(device) {
+    currentDevice = device;
+    localStorage.setItem('last_device', device);
+    document.getElementById('samsung-remote').style.display = device === 'samsung' ? 'flex' : 'none';
+    document.getElementById('digi-remote').style.display = device === 'digi' ? 'flex' : 'none';
+    document.getElementById('app-title').textContent = device === 'samsung' ? '📺 TV Remote' : '📡 DIGI Remote';
+    document.getElementById('btn-samsung').style.cssText = device === 'samsung'
+      ? 'padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;'
+      : 'padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;';
+    document.getElementById('btn-digi').style.cssText = device === 'digi'
+      ? 'padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;'
+      : 'padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;';
+    if (device === 'digi') connectDigi();
+  }
+
+  function connectDigi() {
+    if (digiWs && digiWs.readyState === WebSocket.OPEN) return;
+    digiWs = new WebSocket(BRIDGE);
+    digiWs.onopen = () => setStatus(true, 'DIGI Connected');
+    digiWs.onerror = () => setStatus(false, 'Bridge offline');
+    digiWs.onclose = () => setStatus(false, 'DIGI disconnected');
+  }
+
+  function digiKey(key) {
+    if (!digiWs || digiWs.readyState !== WebSocket.OPEN) {
+      showToast('Start bridge.py on laptop first');
+      return;
+    }
+    const keycode = DIGI_KEYS[key];
+    if (keycode) digiWs.send(JSON.stringify({ action:'key', key, keycode }));
+  }
+
+  function digiSendText() {
+    const input = document.getElementById('digi-text-input');
+    const text = input.value.trim();
+    if (!text) return;
+    if (!digiWs || digiWs.readyState !== WebSocket.OPEN) {
+      showToast('Start bridge.py on laptop first');
+      return;
+    }
+    digiWs.send(JSON.stringify({ action:'text', text }));
+    input.value = '';
+    showToast('Sent: ' + text);
+  }
+
+  // ─── TV MEDIA SKIP ────────────────────────────────────────
+  let tvSkipSeconds = 10;
+  let tvSkipTapCount = 0;
+  let tvSkipTapTimer = null;
+  let tvSkipResetTimer = null;
+  let tvMediaHoldTimer = null;
+  let tvMediaHoldInterval = null;
+
+  function updateTvSkipDisplay() {
+    const el = document.getElementById('tv-skip-display');
+    if (el) el.textContent = tvSkipSeconds > 0 ? '⏩ ' + tvSkipSeconds + 's' : '';
+  }
+
+  function sendTvSkip(dir) {
+    const key = dir === 'fwd' ? 'KEY_FF' : 'KEY_REWIND';
+    const presses = Math.max(1, Math.round(tvSkipSeconds / 5));
+    for (let i = 0; i < presses; i++) {
+      setTimeout(() => sendKey(key), i * 100);
+    }
+  }
+
+  function startTvMediaHold(dir) {
+    tvSkipTapCount++;
+    clearTimeout(tvSkipTapTimer);
+    tvSkipTapTimer = setTimeout(() => {
+      if (tvSkipTapCount >= 3) tvSkipSeconds = 30;
+      else if (tvSkipTapCount === 2) tvSkipSeconds = 20;
+      else tvSkipSeconds = 10;
+      updateTvSkipDisplay();
+      tvSkipTapCount = 0;
+      clearTimeout(tvSkipResetTimer);
+      tvSkipResetTimer = setTimeout(() => { tvSkipSeconds = 10; updateTvSkipDisplay(); }, 3000);
+    }, 300);
+    sendTvSkip(dir);
+    tvMediaHoldTimer = setTimeout(() => {
+      tvMediaHoldInterval = setInterval(() => sendTvSkip(dir), 500);
+    }, 600);
+  }
+
+  function stopTvMediaHold() {
+    clearTimeout(tvMediaHoldTimer);
+    clearInterval(tvMediaHoldInterval);
+    tvMediaHoldTimer = null;
+    tvMediaHoldInterval = null;
+  }
+
+  updateTvSkipDisplay();
+
+  // ─── MEDIA SKIP ───────────────────────────────────────────
+  let skipSeconds = 10;
+  let skipTapCount = 0;
+  let skipTapTimer = null;
+  let skipResetTimer = null;
+  let mediaHoldTimer = null;
+  let mediaHoldInterval = null;
+  const SKIP_LEVELS = [10, 20, 30];
+
+  function updateSkipDisplay() {
+    const el = document.getElementById('skip-display');
+    if (el) el.textContent = skipSeconds > 0 ? '⏩ ' + skipSeconds + 's' : '';
+  }
+
+  function sendSkip(dir) {
+    const presses = Math.max(1, Math.round(skipSeconds / 5));
+    const key = dir === 'fwd' ? 'fast_forward' : 'rewind';
+    for (let i = 0; i < presses; i++) {
+      setTimeout(() => digiKey(key), i * 100);
+    }
+  }
+
+  function startMediaHold(dir) {
+    // Count rapid taps to increase skip level
+    skipTapCount++;
+    clearTimeout(skipTapTimer);
+    skipTapTimer = setTimeout(() => {
+      // Taps settled — determine skip level
+      if (skipTapCount >= 3) skipSeconds = 30;
+      else if (skipTapCount === 2) skipSeconds = 20;
+      else skipSeconds = 10;
+      updateSkipDisplay();
+      skipTapCount = 0;
+
+      // Reset skip back to 10s after 3 seconds of inactivity
+      clearTimeout(skipResetTimer);
+      skipResetTimer = setTimeout(() => {
+        skipSeconds = 10;
+        updateSkipDisplay();
+      }, 3000);
+    }, 300);
+
+    sendSkip(dir);
+
+    // Hold to keep skipping
+    mediaHoldTimer = setTimeout(() => {
+      mediaHoldInterval = setInterval(() => sendSkip(dir), 500);
+    }, 600);
+  }
+
+  function stopMediaHold() {
+    clearTimeout(mediaHoldTimer);
+    clearInterval(mediaHoldInterval);
+    mediaHoldTimer = null;
+    mediaHoldInterval = null;
+  }
+
+  updateSkipDisplay();
+
+  // Send text on Enter key
+  document.addEventListener('DOMContentLoaded', () => {
+    const input = document.getElementById('digi-text-input');
+    if (input) input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') digiSendText();
+    });
+  });
+
   function getApps() {
     if (!ws || ws.readyState !== WebSocket.OPEN) { showToast('Not connected'); return; }
     ws.send(JSON.stringify({ method:'ms.channel.emit', params:{ event:'ed.installedApp.get', to:'host' }}));
@@ -800,10 +1186,10 @@
     const el = document.getElementById('vol-display');
     if (el) el.textContent = pct + '%';
     if (volLevel === 0) {
-      document.getElementById('mute-btn').textContent = '🔇';
+      const s1 = document.getElementById('mute-svg'); if(s1) s1.setAttribute('stroke','#ef5350');
       muted = true;
     } else {
-      document.getElementById('mute-btn').textContent = '🔊';
+      const s2 = document.getElementById('mute-svg'); if(s2) s2.setAttribute('stroke','#f0f0f0');
       muted = false;
     }
   }
@@ -857,7 +1243,8 @@
   function toggleMute() {
     muted = !muted;
     sendKey('KEY_MUTE');
-    document.getElementById('mute-btn').innerHTML = muted ? '🔈<span style="position:relative;"><span style="display:inline-block;position:absolute;top:50%;left:-18px;width:22px;height:2px;background:var(--red);transform:rotate(-45deg);transform-origin:center;"></span></span>' : '🔈';
+    const svg = document.getElementById('mute-svg');
+    if (svg) svg.setAttribute('stroke', muted ? '#ef5350' : '#f0f0f0');
   }
 
   function showSettings() {
@@ -1073,8 +1460,13 @@
       TV_IP = savedIp;
       document.getElementById('ip-input').value = savedIp;
       document.getElementById('overlay').style.display = 'none';
-      connect();
+      if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+        connect();
+      }
+    } else {
+      document.getElementById('overlay').style.display = 'flex';
     }
+    switchDevice(currentDevice);
 
     
   };
