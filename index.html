@@ -630,8 +630,12 @@
         ontouchstart="event.preventDefault();startTvMediaHold('rew')" ontouchend="event.preventDefault();stopTvMediaHold()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></svg>
       </button>
-      <button class="btn accent-btn" onclick="sendKey('KEY_PLAY_BACK')">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+      <button class="btn accent-btn" onclick="sendKey('KEY_PLAY')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
+          <polygon points="5 3 15 12 5 21 5 3"/>
+          <line x1="19" y1="4" x2="19" y2="20"/>
+          <line x1="22" y1="4" x2="22" y2="20"/>
+        </svg>
       </button>
       <button class="btn" id="tv-btn-fwd"
         onmousedown="startTvMediaHold('fwd')" onmouseup="stopTvMediaHold()" onmouseleave="stopTvMediaHold()"
@@ -785,9 +789,11 @@
         ontouchstart="event.preventDefault();startMediaHold('rew')" ontouchend="event.preventDefault();stopMediaHold()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></svg>
       </button>
-      <button class="btn accent-btn" onclick="digiKey('play_pause')">
+      <button class="btn accent-btn" id="digi-playpause-btn" onclick="togglePlayPause()">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
-          <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+          <polygon points="5 3 15 12 5 21 5 3"/>
+          <line x1="19" y1="4" x2="19" y2="20"/>
+          <line x1="22" y1="4" x2="22" y2="20"/>
         </svg>
       </button>
       <button class="btn" id="btn-fwd"
@@ -943,6 +949,16 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+  let isPlaying = false;
+  function togglePlayPause() {
+    isPlaying = !isPlaying;
+    digiKey(isPlaying ? 'play' : 'pause');
+    const btn = document.getElementById('digi-playpause-btn');
+    if (btn) btn.innerHTML = isPlaying
+      ? '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>'
+      : '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+  }
+
   // ─── DIGI DECODER ─────────────────────────────────────────
   let currentDevice = localStorage.getItem('last_device') || 'samsung';
   const BRIDGE = 'ws://192.168.68.100:8765';
@@ -951,7 +967,7 @@
   const DIGI_KEYS = {
     up:19, down:20, left:21, right:22, ok:23, back:4, home:3,
     menu:82, power:26, vol_up:24, vol_down:25, mute:164, del:67,
-    ch_up:166, ch_down:167, guide:172, play_pause:85,
+    ch_up:166, ch_down:167, guide:172, play_pause:85, play:126, pause:127, stop:86,
     rewind:89, fast_forward:90, exit:4,
     prev:88, next:87, stop:86,
     '0':7,'1':8,'2':9,'3':10,'4':11,'5':12,'6':13,'7':14,'8':15,'9':16
