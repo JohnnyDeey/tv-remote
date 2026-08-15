@@ -906,8 +906,10 @@
   }
 
   function scheduleReconnect() {
-    clearTimeout(reconnectTimer);
-    reconnectTimer = setTimeout(connect, 5000);
+    if (!manualDisconnect) {
+      clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(connect, 30000);
+    }
   }
 
   function setStatus(ok, text) {
