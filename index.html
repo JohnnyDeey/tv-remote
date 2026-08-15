@@ -992,7 +992,7 @@
     document.getElementById('btn-digi').style.cssText = device === 'digi'
       ? 'padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;'
       : 'padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;';
-    if (device === 'digi') connectDigi();
+    if (device === 'digi' && (!digiWs || digiWs.readyState !== WebSocket.OPEN)) connectDigi();
   }
 
   function connectDigi() {
@@ -1270,15 +1270,7 @@
     if (svg) svg.setAttribute('stroke', muted ? '#ef5350' : '#f0f0f0');
   }
 
-  function showSettings() {
-    document.getElementById('settings-ip').textContent = TV_IP;
-    document.getElementById('sens-slider').value = tpSens;
-    document.getElementById('sens-val').textContent = tpSens + '×';
-    document.getElementById('settings-panel').style.display = 'flex';
-  }
-  function closeSettings() {
-    document.getElementById('settings-panel').style.display = 'none';
-  }
+  
   function updateSens(val) {
     tpSens = parseFloat(val);
     localStorage.setItem('tp_sens', tpSens);
@@ -1296,6 +1288,9 @@
     }
   }
 
+  
+
+  
   function showSettings() {
     document.getElementById('settings-ip').textContent = TV_IP;
     document.getElementById('sens-slider').value = tpSens;
@@ -1304,15 +1299,16 @@
     document.getElementById('cursor-val').textContent = cursorSize;
     document.getElementById('settings-panel').style.display = 'flex';
   }
-
-  function showSettings() {
-    document.getElementById('settings-ip').textContent = TV_IP;
-    document.getElementById('sens-slider').value = tpSens;
-    document.getElementById('sens-val').textContent = tpSens + '×';
-    document.getElementById('settings-panel').style.display = 'flex';
-  }
   function closeSettings() {
     document.getElementById('settings-panel').style.display = 'none';
+  }
+  function disconnect() {
+    manualDisconnect = true;
+    clearTimeout(reconnectTimer);
+    if (ws) { try { ws.close(); } catch(e){} ws = null; }
+    connected = false;
+    setStatus(false, 'Disconnected');
+    closeSettings();
   }
   function showSettings2() {
     document.getElementById('overlay-title').textContent = 'Switch TV';
@@ -1495,6 +1491,7 @@
   };
 
   // ─── TRACKPAD ─────────────────────────────────────────────
+  let manualDisconnect = false;
   let trackpadActive = false;
   let tpSens = parseFloat(localStorage.getItem('tp_sens') || '1.5');
 
