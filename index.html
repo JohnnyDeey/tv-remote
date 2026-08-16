@@ -773,13 +773,7 @@
           <polyline points="15 18 9 12 15 6"/>
         </svg>
       </button>
-      <button class="btn" onclick="digiKey('exit')" style="color:var(--red);">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2" stroke-linecap="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
-      </button>
+      <button class="btn" onclick="digiKey('del')" style="font-size:18px;">⌫</button>
     </div>
   </div>
 
@@ -827,9 +821,16 @@
       <button class="num-btn" onclick="digiKey('7')" style="font-size:16px;line-height:1.2;">7<br><span style="font-size:8px;color:var(--text-dim);">PQRS</span></button>
       <button class="num-btn" onclick="digiKey('8')" style="font-size:16px;line-height:1.2;">8<br><span style="font-size:8px;color:var(--text-dim);">TUV</span></button>
       <button class="num-btn" onclick="digiKey('9')" style="font-size:16px;line-height:1.2;">9<br><span style="font-size:8px;color:var(--text-dim);">WXYZ</span></button>
-      <button class="num-btn" onclick="digiKey('del')">⌫</button>
-      <button class="num-btn zero" onclick="digiKey('0')" style="font-size:16px;line-height:1.2;">0<br><span style="font-size:8px;color:var(--text-dim);">+</span></button>
-      <button class="num-btn" onclick="digiKey('ok')" style="color:var(--accent);font-weight:800;">OK</button>
+      </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+      <button class="num-btn" onclick="digiKey('0')" style="font-size:16px;line-height:1.2;padding:18px;">0<br><span style="font-size:8px;color:var(--text-dim);">+</span></button>
+      <button class="num-btn" onclick="digiKey('exit')" style="padding:18px;display:flex;align-items:center;justify-content:center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2" stroke-linecap="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+      </button>
     </div>
   </div>
 
@@ -982,7 +983,7 @@
 
   const DIGI_KEYS = {
     up:19, down:20, left:21, right:22, ok:23, back:4, home:3,
-    menu:82, power:26, vol_up:24, vol_down:25, mute:164, del:67,
+    menu:176, power:26, vol_up:24, vol_down:25, mute:164, del:67,
     ch_up:166, ch_down:167, guide:172, play_pause:85, play:126, pause:127, stop:86,
     rewind:89, fast_forward:90, exit:4,
     prev:88, next:87, stop:86,
