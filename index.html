@@ -449,6 +449,27 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- GOTO POPUP -->
+<div id="goto-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:300;align-items:center;justify-content:center;">
+  <div style="background:var(--surface);border:1px solid var(--accent);border-radius:16px;padding:20px;width:280px;display:flex;flex-direction:column;gap:12px;">
+    <div style="font-size:14px;font-weight:700;color:var(--accent);text-align:center;">⏱ Go To Time</div>
+    <div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Current time (mm:ss or hh:mm:ss)</div>
+      <input id="goto-current" type="text" placeholder="00:05:30" inputmode="numeric"
+        style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px;color:var(--text);font-size:15px;outline:none;box-sizing:border-box;">
+    </div>
+    <div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;">Target time (mm:ss or hh:mm:ss)</div>
+      <input id="goto-target" type="text" placeholder="00:10:00" inputmode="numeric"
+        style="width:100%;background:var(--surface2);border:1px solid var(--accent);border-radius:8px;padding:10px;color:var(--text);font-size:15px;outline:none;box-sizing:border-box;">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <button onclick="closeGoTo()" style="padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:13px;cursor:pointer;">Cancel</button>
+      <button onclick="executeGoTo()" style="padding:12px;background:var(--accent);border:none;border-radius:8px;color:#000;font-size:13px;font-weight:700;cursor:pointer;">Go ⏩</button>
+    </div>
+  </div>
+</div>
+
 <!-- SETTINGS PANEL -->
 <div id="settings-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
   <div style="width:100%;max-width:320px;background:var(--surface);border-radius:16px;padding:20px;border:1px solid var(--border);display:flex;flex-direction:column;gap:16px;">
@@ -837,8 +858,14 @@
       <button class="num-btn" onclick="digiKey('8')" style="font-size:16px;line-height:1.2;">8<br><span style="font-size:8px;color:var(--text-dim);">TUV</span></button>
       <button class="num-btn" onclick="digiKey('9')" style="font-size:16px;line-height:1.2;">9<br><span style="font-size:8px;color:var(--text-dim);">WXYZ</span></button>
       </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px;">
       <button class="num-btn" onclick="digiKey('0')" style="font-size:16px;line-height:1.2;">0<br><span style="font-size:8px;color:var(--text-dim);">+</span></button>
+      <button class="num-btn" onclick="showGoTo()" style="display:flex;align-items:center;justify-content:center;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+      </button>
       <button class="num-btn" onclick="digiKey('exit')" style="display:flex;align-items:center;justify-content:center;">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2" stroke-linecap="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -980,6 +1007,39 @@
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function showGoTo() {
+    document.getElementById('goto-popup').style.display = 'flex';
+    document.getElementById('goto-current').value = '';
+    document.getElementById('goto-target').value = '';
+  }
+
+  function closeGoTo() {
+    document.getElementById('goto-popup').style.display = 'none';
+  }
+
+  function executeGoTo() {
+    const currentTime = document.getElementById('goto-current').value.trim();
+    const targetTime = document.getElementById('goto-target').value.trim();
+    if (!currentTime || !targetTime) { showToast('Enter both times'); return; }
+
+    function toSecs(t) {
+      const p = t.split(':').map(Number);
+      if (p.length === 2) return p[0] * 60 + p[1];
+      if (p.length === 3) return p[0] * 3600 + p[1] * 60 + p[2];
+      return 0;
+    }
+
+    const diff = toSecs(targetTime) - toSecs(currentTime);
+    const presses = Math.abs(Math.round(diff / 10));
+    const key = diff > 0 ? 'fast_forward' : 'rewind';
+
+    closeGoTo();
+    showToast((diff > 0 ? '⏩ ' : '⏪ ') + presses + ' jumps');
+    for (let i = 0; i < presses; i++) {
+      setTimeout(() => digiKey(key), i * 150);
+    }
+  }
 
   let isPlaying = false;
   function togglePlayPause() {
