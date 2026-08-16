@@ -4,22 +4,27 @@ import subprocess
 import websockets
 
 PORT = 8765
+ADB = ["/data/data/com.termux/files/usr/bin/adb", "-s", "emulator-5554", "shell"]
 
 async def handler(websocket):
     async for message in websocket:
         try:
             data = json.loads(message)
             action = data.get("action")
+
             if action == "text":
                 text = data.get("text", "")
                 text = text.replace(" ", "%s")
-                subprocess.run(["adb", "shell", "input", "text", text])
+                subprocess.run(ADB + ["input", "text", text])
+
             elif action == "key":
                 keycode = data.get("keycode", 0)
-                subprocess.run(["adb", "shell", "input", "keyevent", str(keycode)])
+                subprocess.run(ADB + ["input", "keyevent", str(keycode)])
+
             await websocket.send(json.dumps({"status": "ok"}))
+
         except Exception as e:
-            await websocket.send(json.dumps({"status": "error"}))
+            await websocket.send(json.dumps({"status": "error", "msg": str(e)}))
 
 async def main():
     async with websockets.serve(handler, "0.0.0.0", PORT):

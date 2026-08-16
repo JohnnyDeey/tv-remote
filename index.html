@@ -449,6 +449,19 @@
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
+<!-- FULL SCREEN TRACKPAD -->
+<div id="full-trackpad-overlay" style="display:none;position:fixed;inset:0;background:#0a0a0a;z-index:500;flex-direction:column;">
+  <div id="full-trackpad-pad" style="flex:1;background:#111;position:relative;touch-action:none;">
+    <div id="full-tp-ripple" style="position:absolute;width:80px;height:80px;border-radius:50%;background:var(--accent);opacity:0;transform:scale(0);pointer-events:none;transition:transform 0.25s,opacity 0.25s;left:50%;top:50%;margin:-40px 0 0 -40px;"></div>
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--border);font-size:13px;text-align:center;pointer-events:none;">Slide to move · Tap to click</div>
+  </div>
+  <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
+    <button onclick="fullTrackpadKey('back')" style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;color:var(--text);font-size:18px;cursor:pointer;">←</button>
+    <button onclick="fullTrackpadClick()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:10px;padding:14px;color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;">✓ Click</button>
+    <button onclick="closeFullTrackpad()" style="background:var(--red);border:none;border-radius:10px;padding:14px;color:#fff;font-size:13px;font-weight:700;cursor:pointer;">✕ Exit</button>
+  </div>
+</div>
+
 <!-- SETTINGS PANEL -->
 <div id="settings-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
   <div style="width:100%;max-width:320px;background:var(--surface);border-radius:16px;padding:20px;border:1px solid var(--border);display:flex;flex-direction:column;gap:16px;">
@@ -479,6 +492,12 @@
 <!-- REMOTE UI -->
 <div class="status-bar">
   <h1 id="app-title">📺 TV Remote</h1>
+  <button onclick="openFullTrackpad()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--text-dim);">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+      <rect x="5" y="2" width="14" height="20" rx="7"/>
+      <line x1="12" y1="2" x2="12" y2="9"/>
+    </svg>
+  </button>
   <div style="display:flex;align-items:center;gap:10px;">
     <div class="status-dot" id="tv-status-dot" style="display:flex;">
       <div class="dot" id="dot"></div>
@@ -974,6 +993,100 @@
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ─── FULL SCREEN TRACKPAD ─────────────────────────────────
+  let mouseWs = null;
+
+  function openFullTrackpad() {
+    document.getElementById('full-trackpad-overlay').style.display = 'flex';
+    document.getElementById('full-trackpad-overlay').style.flexDirection = 'column';
+    // Connect to mouse bridge only when trackpad opens
+    if (currentDevice === 'digi') {
+      const mouseUrl = 'ws://' + (localStorage.getItem('bridge_ip') || '192.168.68.100') + ':8766';
+      mouseWs = new WebSocket(mouseUrl);
+      mouseWs.onopen = () => showToast('🖱 Mouse ready');
+      mouseWs.onerror = () => showToast('Mouse bridge not running');
+    }
+  }
+
+  function closeFullTrackpad() {
+    document.getElementById('full-trackpad-overlay').style.display = 'none';
+    if (mouseWs) { 
+      try { 
+        mouseWs.send(JSON.stringify({action:'mouse_reset'}));
+        mouseWs.close(); 
+      } catch(e){} 
+      mouseWs = null; 
+    }
+  }
+
+  function closeFullTrackpad() {
+    document.getElementById('full-trackpad-overlay').style.display = 'none';
+  }
+
+  function fullTrackpadClick() {
+    if (currentDevice === 'samsung') {
+      if (!ws || ws.readyState !== WebSocket.OPEN) return;
+      ws.send(JSON.stringify({ method:'ms.remote.control', params:{ Cmd:'LeftClick', Position:{ x:0, y:0, Time:Date.now() }, TypeOfRemote:'ProcessMouseDevice' }}));
+    } else {
+      if (!mouseWs || mouseWs.readyState !== WebSocket.OPEN) return;
+      mouseWs.send(JSON.stringify({ action:'mouse_tap' }));
+    }
+    const r = document.getElementById('full-tp-ripple');
+    r.style.opacity='0.3'; r.style.transform='scale(1)';
+    setTimeout(()=>{ r.style.opacity='0'; r.style.transform='scale(0)'; }, 280);
+  }
+
+  function fullTrackpadKey(key) {
+    if (currentDevice === 'samsung') sendKey('KEY_RETURN');
+    else digiKey(key);
+  }
+
+  (function initFullTrackpad() {
+    const pad = document.getElementById('full-trackpad-pad');
+    if (!pad) return;
+    const SENS = 2;
+    let lx=null, ly=null, isTap=false, totalMove=0, ax=0, ay=0;
+
+    function move(dx, dy) {
+      if (currentDevice === 'samsung') {
+        if (!ws || ws.readyState !== WebSocket.OPEN) return;
+        ws.send(JSON.stringify({ method:'ms.remote.control', params:{ Cmd:'Move', Position:{ x:Math.round(dx), y:Math.round(dy), Time:Date.now() }, TypeOfRemote:'ProcessMouseDevice' }}));
+      } else {
+        if (!mouseWs || mouseWs.readyState !== WebSocket.OPEN) return;
+        mouseWs.send(JSON.stringify({ action:'mouse_move', dx:Math.round(dx), dy:Math.round(dy) }));
+      }
+    }
+
+    pad.addEventListener('touchstart', e=>{ e.preventDefault(); const t=e.touches[0]; lx=t.clientX; ly=t.clientY; totalMove=0; isTap=true; ax=0; ay=0; },{passive:false});
+    pad.addEventListener('touchmove', e=>{ e.preventDefault();
+      const t=e.touches[0];
+      const dx=(t.clientX-lx)*SENS, dy=(t.clientY-ly)*SENS;
+      totalMove+=Math.abs(t.clientX-lx)+Math.abs(t.clientY-ly);
+      if(totalMove>6) isTap=false;
+      ax+=dx; ay+=dy;
+      const ix=Math.trunc(ax), iy=Math.trunc(ay);
+      if(ix||iy){ move(ix,iy); ax-=ix; ay-=iy; }
+      lx=t.clientX; ly=t.clientY;
+    },{passive:false});
+    pad.addEventListener('touchend', e=>{ e.preventDefault();
+      if(isTap) fullTrackpadClick();
+      lx=null; ly=null;
+    },{passive:false});
+
+    let md=false;
+    pad.addEventListener('mousedown', e=>{ md=true; lx=e.clientX; ly=e.clientY; totalMove=0; isTap=true; ax=0; ay=0; });
+    window.addEventListener('mousemove', e=>{ if(!md) return;
+      const dx=(e.clientX-lx)*SENS, dy=(e.clientY-ly)*SENS;
+      totalMove+=Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly);
+      if(totalMove>6) isTap=false;
+      ax+=dx; ay+=dy;
+      const ix=Math.trunc(ax), iy=Math.trunc(ay);
+      if(ix||iy){ move(ix,iy); ax-=ix; ay-=iy; }
+      lx=e.clientX; ly=e.clientY;
+    });
+    window.addEventListener('mouseup', ()=>{ if(md&&isTap) fullTrackpadClick(); md=false; lx=null; });
+  })();
 
   let isPlaying = false;
   function togglePlayPause() {
