@@ -621,9 +621,7 @@
 
   <!-- TV MEDIA CONTROLS -->
   <div class="section">
-    <div style="display:flex;justify-content:center;margin-bottom:8px;">
-      <span id="tv-skip-display" style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;"></span>
-    </div>
+    
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
       <button class="btn" onclick="sendKey('KEY_REWIND')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
@@ -698,12 +696,17 @@
 
   <!-- KEYBOARD INPUT -->
   <div class="section">
-    <div style="font-size:10px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:8px;">⌨ TYPE DIRECTLY</div>
+    
     <div style="display:flex;gap:8px;">
-      <input id="digi-text-input" type="text" placeholder="Type here → sends to decoder…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      <input id="digi-text-input" type="text" placeholder="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
         style="flex:1;background:var(--surface2);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;color:var(--text);font-size:15px;outline:none;"
         oninput="digiTypeRealtime(this.value)">
-      <button onclick="digiSendText()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;">Send</button>
+      <button onclick="digiSendText()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round">
+          <polyline points="9 10 4 15 9 20"/>
+          <path d="M20 4v7a4 4 0 0 1-4 4H4"/>
+        </svg>
+      </button>
     </div>
     
   </div>
@@ -793,9 +796,7 @@
 
   <!-- MEDIA CONTROLS -->
   <div class="section">
-    <div style="display:flex;justify-content:center;margin-bottom:8px;">
-      <span id="skip-display" style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:1px;"></span>
-    </div>
+    
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
       <button class="btn" onclick="digiKey('prev')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
@@ -1057,16 +1058,14 @@
   }
 
   function digiSendText() {
-    const input = document.getElementById('digi-text-input');
-    const text = input.value.trim();
-    if (!text) return;
     if (!digiWs || digiWs.readyState !== WebSocket.OPEN) {
       showToast('DIGI bridge not connected');
       return;
     }
-    digiWs.send(JSON.stringify({ action:'text', text }));
-    input.value = '';
-    showToast('Sent: ' + text);
+    // Just send Enter to confirm/search
+    digiWs.send(JSON.stringify({ action:'key', key:'ok', keycode:66 }));
+    document.getElementById('digi-text-input').value = '';
+    lastSentText = '';
   }
 
   // ─── TV MEDIA SKIP ────────────────────────────────────────
@@ -1180,7 +1179,7 @@
   document.addEventListener('DOMContentLoaded', () => {
     const input = document.getElementById('digi-text-input');
     if (input) input.addEventListener('keydown', e => {
-      if (e.key === 'Enter') digiSendText();
+      if (e.key === 'Enter') { e.preventDefault(); digiSendText(); }
     });
   });
 
