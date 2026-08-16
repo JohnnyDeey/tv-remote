@@ -530,33 +530,17 @@
 
       <!-- VOL -->
       <div class="vol-ch">
-        <div class="vc-group" style="position:relative;overflow:visible;">
-          <div class="vc-label" style="pointer-events:none;">VOL <span id="vol-display" style="color:var(--accent);font-size:9px;"></span></div>
-          <div class="vc-btn" onclick="showVolSlider()" style="background:none;border:none;display:flex;align-items:center;justify-content:center;padding:10px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round">
-              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
-              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
-            </svg>
-          </div>
-          <div class="vc-mid" onclick="toggleMute()" id="mute-btn" style="background:none;border:none;display:flex;align-items:center;justify-content:center;padding:10px;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round" id="mute-svg">
+        <div class="vc-group">
+          <div class="vc-label" style="pointer-events:none;">VOL</div>
+          <div class="vc-btn" onmousedown="startRepeat('KEY_VOLUP','vol',1)" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_VOLUP','vol',1)" ontouchend="stopRepeat()">＋</div>
+          <div class="vc-mid" onclick="toggleMute()" id="mute-btn" style="display:flex;align-items:center;justify-content:center;padding:6px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round" id="mute-svg">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
               <line x1="23" y1="9" x2="17" y2="15" stroke="#ef5350"/>
               <line x1="17" y1="9" x2="23" y2="15" stroke="#ef5350"/>
             </svg>
           </div>
-          <!-- VOL SLIDER POPUP -->
-          <div id="vol-slider-popup" style="display:none;position:absolute;left:50%;top:100%;transform:translateX(-50%);margin-top:6px;background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:16px 10px;z-index:999;align-items:center;flex-direction:column;gap:8px;width:64px;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
-            <span style="font-size:10px;color:var(--accent);font-weight:700;" id="vol-pct">0%</span>
-            <input type="range" id="vol-slider" min="0" max="100" step="1" value="50"
-              orient="vertical"
-              style="writing-mode:vertical-lr;direction:rtl;width:32px;height:130px;accent-color:var(--accent);cursor:pointer;"
-              oninput="onVolSlide(this.value)"
-              ontouchend="hideVolSlider()"
-              onmouseup="hideVolSlider()">
-            <span style="font-size:18px;pointer-events:none;">🔈</span>
-          </div>
+          <div class="vc-btn" onmousedown="startRepeat('KEY_VOLDOWN','vol',-1)" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_VOLDOWN','vol',-1)" ontouchend="stopRepeat()">－</div>
         </div>
       </div>
 
