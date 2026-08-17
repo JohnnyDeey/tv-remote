@@ -608,7 +608,7 @@
           <polyline points="9 21 9 12 15 12 15 21"/>
         </svg>
       </button>
-      <button class="btn" onclick="sendKey('KEY_DEL')" style="font-size:18px;">⌫</button>
+      <button class="btn" onmousedown="startRepeat('KEY_DEL')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_DEL')" ontouchend="stopRepeat();" style="font-size:18px;">⌫</button>
       <button style="display:none;" onclick="sendKey('KEY_EXIT')" style="color:var(--red);">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2" stroke-linecap="round">
           <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
@@ -764,7 +764,7 @@
           <polyline points="15 18 9 12 15 6"/>
         </svg>
       </button>
-      <button class="btn" onclick="digiKey('del')" style="font-size:22px;padding:16px;">⌫</button>
+      <button class="btn" onmousedown="startRepeat('del','digi')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="event.preventDefault();startRepeat('del','digi')" ontouchend="event.preventDefault();stopRepeat();" style="font-size:22px;padding:16px;">⌫</button>
     </div>
   </div>
 
@@ -943,6 +943,19 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+  // Reconnect immediately when app comes back to foreground
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      if (!connected) {
+        manualDisconnect = false;
+        connect();
+      }
+      if (!digiWs || digiWs.readyState !== WebSocket.OPEN) {
+        connectDigi();
+      }
+    }
+  });
+
   function tvPower() {
     if (connected) {
       sendKey('KEY_POWER');
@@ -1049,7 +1062,7 @@
     digiWs = new WebSocket(bridgeUrl);
     digiWs.onopen = () => setDigiStatus(true, 'Connected');
     digiWs.onerror = () => setDigiStatus(false, 'Bridge offline');
-    digiWs.onclose = () => { setDigiStatus(false, 'Disconnected'); setTimeout(connectDigi, 10000); }
+    digiWs.onclose = () => { setDigiStatus(false, 'Disconnected'); setTimeout(connectDigi, 1000); }
     digiWs.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
@@ -1097,8 +1110,11 @@
       showToast('DIGI bridge not connected');
       return;
     }
-    // Just send Enter to confirm/search
-    digiWs.send(JSON.stringify({ action:'key', key:'ok', keycode:66 }));
+    // First dismiss onscreen keyboard with Back, then send Enter
+    digiWs.send(JSON.stringify({ action:'key', key:'back', keycode:4 }));
+    setTimeout(() => {
+      digiWs.send(JSON.stringify({ action:'key', key:'ok', keycode:66 }));
+    }, 300);
     document.getElementById('digi-text-input').value = '';
     lastSentText = '';
   }
@@ -1301,8 +1317,8 @@
       window._repeatKey = null;
       repeatTimer = setTimeout(() => {
         digiKey(key);
-        repeatInterval = setInterval(() => digiKey(key), 100);
-      }, 400);
+        repeatInterval = setInterval(() => digiKey(key), 50);
+      }, 200);
       window._digiHoldKey = key;
       return;
     }
@@ -1328,22 +1344,15 @@
         sendKey(key);
         repeatInterval = setInterval(() => {
           sendKey(key);
-        }, 100);
-      }, 400);
+        }, 50);
+      }, 150);
       // store fired ref so stopRepeat can send single key on quick tap
       window._repeatFired = () => fired;
       window._repeatKey = key;
     }
   }
 
-  // Global safety net - stop repeat on any touch end anywhere
-  document.addEventListener('touchend', () => {
-    clearTimeout(repeatTimer);
-    clearInterval(repeatInterval);
-    repeatTimer = null;
-    repeatInterval = null;
-    window._digiHoldKey = null;
-  }, { passive: true });
+  
 
   function stopRepeat() {
     if (window._digiHoldKey) {
