@@ -192,8 +192,8 @@
 
   /* BUTTON BASE */
   .btn {
-    background: var(--btn);
-    border: 1px solid var(--border);
+    background: radial-gradient(circle at 35% 35%, #3a3a3a, #1a1a1a);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: var(--radius-sm);
     color: var(--text);
     cursor: pointer;
@@ -209,14 +209,16 @@
     text-transform: uppercase;
     color: var(--text-dim);
     user-select: none;
-    transition: background 0.1s, transform 0.1s;
+    transition: background 0.1s;
     -webkit-user-select: none;
     position: relative;
+    box-shadow: 0 6px 0 #0a0a0a, 0 8px 16px rgba(0,0,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
     overflow: hidden;
   }
   .btn:active {
-    background: var(--btn-active);
-    transform: scale(0.95);
+    background: radial-gradient(circle at 35% 35%, #2a2a2a, #151515);
+    box-shadow: 0 2px 0 #0a0a0a, 0 4px 8px rgba(0,0,0,0.4), inset 0 -1px 3px rgba(0,0,0,0.3);
+    transform: translateY(4px);
   }
   .btn .icon {
     font-size: 20px;
@@ -272,21 +274,22 @@
     margin: 0 auto;
   }
   .dpad-btn {
-    background: var(--surface2);
-    border: 1px solid var(--border);
+    background: radial-gradient(circle at 35% 35%, #3a3a3a, #1a1a1a);
+    border: 1px solid rgba(255,255,255,0.08);
     color: var(--text);
     cursor: pointer;
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4px 0 #0a0a0a, inset 0 1px 0 rgba(255,255,255,0.08);
     font-size: 18px;
     aspect-ratio: 1;
     user-select: none;
     -webkit-user-select: none;
     transition: background 0.1s, transform 0.1s;
   }
-  .dpad-btn:active { background: var(--btn-active); transform: scale(0.92); }
+  .dpad-btn:active { background: radial-gradient(circle at 35% 35%, #2a2a2a, #111); box-shadow: 0 1px 0 #0a0a0a; transform: translateY(3px); }
   .dpad-ok {
     background: var(--accent-dim);
     border-color: var(--accent);
@@ -305,10 +308,11 @@
     min-width: 64px;
   }
   .vc-group {
-    background: var(--surface2);
-    border: 1px solid var(--border);
+    background: radial-gradient(circle at 35% 35%, #3a3a3a, #1a1a1a);
+    border: 1px solid rgba(255,255,255,0.08);
     border-radius: 10px;
     overflow: visible;
+    box-shadow: 0 6px 0 #0a0a0a, 0 8px 16px rgba(0,0,0,0.4), inset 0 -3px 6px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
   }
   .vc-label {
     font-size: 9px;
@@ -332,7 +336,7 @@
     transition: background 0.1s;
     color: var(--text);
   }
-  .vc-btn:active { background: var(--btn-active); }
+  .vc-btn:active { background: rgba(0,0,0,0.3); }
   .vc-mid {
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
@@ -345,7 +349,7 @@
     cursor: pointer;
     transition: background 0.1s;
   }
-  .vc-mid:active { background: var(--btn-active); }
+  .vc-mid:active { background: rgba(0,0,0,0.3); }
 
   /* NAV ROW - BACK HOME MENU */
   .nav-row {
@@ -510,8 +514,8 @@
 
 <!-- DEVICE SWITCHER -->
 <div style="width:100%;max-width:380px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
-  <button id="btn-samsung" onclick="switchDevice('samsung')" style="padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;">📺 Samsung TV</button>
-  <button id="btn-digi" onclick="switchDevice('digi')" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;">📡 DIGI Decoder</button>
+  <button id="btn-samsung" onclick="switchDevice('samsung')" style="padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a,inset 0 1px 0 rgba(255,255,255,0.08);">📺 Samsung TV</button>
+  <button id="btn-digi" onclick="switchDevice('digi')" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a,inset 0 1px 0 rgba(255,255,255,0.08);">📡 DIGI Decoder</button>
 </div>
 
 <div class="remote" id="samsung-remote">
@@ -561,24 +565,30 @@
       </div>
 
       <!-- D-PAD CIRCLE -->
-      <div style="position:relative;width:170px;height:170px;flex-shrink:0;">
-        <svg width="170" height="170" viewBox="0 0 220 220" style="position:absolute;top:0;left:0;">
+      <div style="position:relative;flex:1;aspect-ratio:1;max-width:170px;max-height:170px;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="90 90 320 320" width="100%" height="100%" style="filter:drop-shadow(0 8px 0 #000) drop-shadow(0 12px 20px rgba(0,0,0,0.8));">
+          <defs>
+            <radialGradient id="sectorGrad" cx="40%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#4a4a4a"/>
+              <stop offset="100%" stop-color="#1e1e1e"/>
+            </radialGradient>
+          </defs>
           <!-- UP sector -->
-          <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_UP');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_UP');this.style.fill='#333'" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
+          <path d="M 338.874 130.914 L 277.951 193.101 C 257.967 179.635 231.936 179.534 212.701 192.887 L 148.514 130.004 C 201.815 83.107 283.046 83.527 338.873 130.914 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startRepeat('KEY_UP');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startRepeat('KEY_UP');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 233.182 145.816 L 263.737 145.815 L 248.461 115.26 Z" fill="white" opacity="0.85" pointer-events="none"/>
           <!-- RIGHT sector -->
-          <path d="M110,110 L205,15 A134,134 0 0,1 205,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_RIGHT');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_RIGHT');this.style.fill='#333'" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
+          <path d="M 292.256 206.547 L 353.006 144.537 C 403.15 199.411 405.78 281.844 359.491 336.694 L 295.305 273.812 C 308.703 253.633 307.566 226.472 292.255 206.546 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startRepeat('KEY_RIGHT');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startRepeat('KEY_RIGHT');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 350.005 227.016 L 350.005 257.571 L 376.56 242.293 Z" fill="white" opacity="0.85" pointer-events="none"/>
           <!-- DOWN sector -->
-          <path d="M110,110 L205,205 A134,134 0 0,1 15,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_DOWN');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_DOWN');this.style.fill='#333'" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
+          <path d="M 152.636 349.064 L 213.386 287.053 C 233.966 302.208 261.74 302.554 281.729 287.991 L 345.818 350.778 C 291.936 399.044 208.829 398.35 152.637 349.065 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startRepeat('KEY_DOWN');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startRepeat('KEY_DOWN');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 263.116 335.075 L 233.561 335.075 L 247.838 361.63 Z" fill="white" opacity="0.85" pointer-events="none"/>
           <!-- LEFT sector -->
-          <path d="M110,110 L15,205 A134,134 0 0,1 15,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="startRepeat('KEY_LEFT');this.style.fill='#333'" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="startRepeat('KEY_LEFT');this.style.fill='#333'" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
-          <!-- Arrow icons -->
-          <text x="110" y="52" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▲</text>
-          <text x="170" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▶</text>
-          <text x="110" y="180" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▼</text>
-          <text x="50" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">◀</text>
+          <path d="M 199.649 273.028 L 138.726 335.214 C 89.913 280.03 88.115 198.198 134.716 143.966 L 198.806 206.753 C 185.13 226.36 185.526 252.964 199.649 273.028 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startRepeat('KEY_LEFT');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startRepeat('KEY_LEFT');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 148.898 254.489 L 148.898 224.934 L 122.343 239.212 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- OK button -->
+          <circle cx="248" cy="242" r="70" fill="var(--accent-dim)" stroke="#4fc3f7" stroke-width="3" style="cursor:pointer;" onclick="sendKey('KEY_ENTER')" onmousedown="this.style.fill='#1e4a5a'" onmouseup="this.style.fill=''" ontouchstart="this.style.fill='#1e4a5a'" ontouchend="this.style.fill=''"/>
+          <text x="248" y="251" text-anchor="middle" fill="#4fc3f7" font-size="26" font-weight="800" font-family="Arial" pointer-events="none">OK</text>
         </svg>
-        <!-- OK button in centre -->
-        <div onclick="sendKey('KEY_ENTER')" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:68px;height:68px;border-radius:50%;background:var(--accent-dim);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px;font-weight:800;cursor:pointer;z-index:2;user-select:none;">OK</div>
       </div>
 
       <!-- CH -->
@@ -681,8 +691,8 @@
           oninput="digiTypeRealtime(this.value)">
         <button onclick="clearDigiInput()" style="position:absolute;right:8px;background:none;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;padding:2px 4px;line-height:1;">✕</button>
       </div>
-      <button onclick="digiSendText()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round">
+      <button onclick="digiSendText()" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);color:#f0f0f0;border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 0 #0a0a0a,inset 0 1px 0 rgba(255,255,255,0.08);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2.5" stroke-linecap="round">
           <polyline points="9 10 4 15 9 20"/>
           <path d="M20 4v7a4 4 0 0 1-4 4H4"/>
         </svg>
@@ -730,18 +740,30 @@
       </div>
 
       <!-- DPAD CIRCLE -->
-      <div style="position:relative;width:170px;height:170px;flex-shrink:0;">
-        <svg width="170" height="170" viewBox="0 0 220 220" style="position:absolute;top:0;left:0;">
-          <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="this.style.fill='#333';startRepeat('up','digi')" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333';startRepeat('up','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
-          <path d="M110,110 L205,15 A134,134 0 0,1 205,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="this.style.fill='#333';startRepeat('right','digi')" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333';startRepeat('right','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
-          <path d="M110,110 L205,205 A134,134 0 0,1 15,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="this.style.fill='#333';startRepeat('down','digi')" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333';startRepeat('down','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
-          <path d="M110,110 L15,205 A134,134 0 0,1 15,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="this.style.fill='#333';startRepeat('left','digi')" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333';startRepeat('left','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
-          <text x="110" y="52" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▲</text>
-          <text x="170" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▶</text>
-          <text x="110" y="180" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▼</text>
-          <text x="50" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">◀</text>
+      <div style="position:relative;flex:1;aspect-ratio:1;max-width:170px;max-height:170px;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="90 90 320 320" width="100%" height="100%" style="filter:drop-shadow(0 8px 0 #000) drop-shadow(0 12px 20px rgba(0,0,0,0.8));">
+          <defs>
+            <radialGradient id="digiSectorGrad" cx="40%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#4a4a4a"/>
+              <stop offset="100%" stop-color="#1e1e1e"/>
+            </radialGradient>
+          </defs>
+          <!-- UP sector -->
+          <path d="M 338.874 130.914 L 277.951 193.101 C 257.967 179.635 231.936 179.534 212.701 192.887 L 148.514 130.004 C 201.815 83.107 283.046 83.527 338.873 130.914 Z" fill="url(#digiSectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="this.style.fill='#555';startRepeat('up','digi')" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="event.preventDefault();this.style.fill='#555';startRepeat('up','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 233.182 145.816 L 263.737 145.815 L 248.461 115.26 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- RIGHT sector -->
+          <path d="M 292.256 206.547 L 353.006 144.537 C 403.15 199.411 405.78 281.844 359.491 336.694 L 295.305 273.812 C 308.703 253.633 307.566 226.472 292.255 206.546 Z" fill="url(#digiSectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="this.style.fill='#555';startRepeat('right','digi')" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="event.preventDefault();this.style.fill='#555';startRepeat('right','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 350.005 227.016 L 350.005 257.571 L 376.56 242.293 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- DOWN sector -->
+          <path d="M 152.636 349.064 L 213.386 287.053 C 233.966 302.208 261.74 302.554 281.729 287.991 L 345.818 350.778 C 291.936 399.044 208.829 398.35 152.637 349.065 Z" fill="url(#digiSectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="this.style.fill='#555';startRepeat('down','digi')" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="event.preventDefault();this.style.fill='#555';startRepeat('down','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 263.116 335.075 L 233.561 335.075 L 247.838 361.63 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- LEFT sector -->
+          <path d="M 199.649 273.028 L 138.726 335.214 C 89.913 280.03 88.115 198.198 134.716 143.966 L 198.806 206.753 C 185.13 226.36 185.526 252.964 199.649 273.028 Z" fill="url(#digiSectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="this.style.fill='#555';startRepeat('left','digi')" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="event.preventDefault();this.style.fill='#555';startRepeat('left','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 148.898 254.489 L 148.898 224.934 L 122.343 239.212 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- OK button -->
+          <circle cx="248" cy="242" r="70" fill="var(--accent-dim)" stroke="#4fc3f7" stroke-width="3" style="cursor:pointer;" onclick="digiKey('ok')" onmousedown="this.style.fill='#1e4a5a'" onmouseup="this.style.fill=''" ontouchstart="this.style.fill='#1e4a5a'" ontouchend="this.style.fill=''"/>
+          <text x="248" y="251" text-anchor="middle" fill="#4fc3f7" font-size="26" font-weight="800" font-family="Arial" pointer-events="none">OK</text>
         </svg>
-        <div onclick="digiKey('ok')" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:68px;height:68px;border-radius:50%;background:var(--accent-dim);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:14px;font-weight:800;cursor:pointer;z-index:2;user-select:none;">OK</div>
       </div>
 
       <!-- CH -->
@@ -1046,12 +1068,13 @@
     document.getElementById('samsung-remote').style.display = device === 'samsung' ? 'flex' : 'none';
     document.getElementById('digi-remote').style.display = device === 'digi' ? 'flex' : 'none';
     document.getElementById('app-title').textContent = device === 'samsung' ? '📺 TV Remote' : '📡 DIGI Remote';
+    const shadow = 'box-shadow:0 4px 0 #0a0a0a,inset 0 1px 0 rgba(255,255,255,0.08);';
     document.getElementById('btn-samsung').style.cssText = device === 'samsung'
-      ? 'padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;'
-      : 'padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;';
+      ? `padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;${shadow}`
+      : `padding:10px;border-radius:10px;border:1px solid var(--border);background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;${shadow}`;
     document.getElementById('btn-digi').style.cssText = device === 'digi'
-      ? 'padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;'
-      : 'padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;';
+      ? `padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;${shadow}`
+      : `padding:10px;border-radius:10px;border:1px solid var(--border);background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;${shadow}`;
     if (device === 'digi' && (!digiWs || digiWs.readyState !== WebSocket.OPEN)) connectDigi();
   }
 

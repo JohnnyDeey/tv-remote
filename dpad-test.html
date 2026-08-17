@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { background: #0a0a0a; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+  
+  .dpad-sector { cursor: pointer; transition: filter 0.1s; }
+  .dpad-sector:hover { filter: brightness(1.4); }
+  .dpad-sector:active { filter: brightness(0.7); }
+</style>
+</head>
+<body>
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="220" height="220" style="filter:drop-shadow(0 8px 0 #000) drop-shadow(0 12px 20px rgba(0,0,0,0.8));">
+  <defs>
+    <radialGradient id="sectorGrad" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#4a4a4a"/>
+      <stop offset="100%" stop-color="#1e1e1e"/>
+    </radialGradient>
+    <radialGradient id="sectorActive" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#5a5a5a"/>
+      <stop offset="100%" stop-color="#2a2a2a"/>
+    </radialGradient>
+  </defs>
+  <!-- UP sector -->
+ <!-- UP sector + white arrow -->
+  <path class="dpad-sector" d="M 338.874 130.914 L 277.951 193.101 C 257.967 179.635 231.936 179.534 212.701 192.887 L 148.514 130.004 C 201.815 83.107 283.046 83.527 338.873 130.914 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" onclick="alert('UP')"/>
+  <path d="M 233.182 145.816 L 263.737 145.815 L 248.461 115.26 Z" fill="white" opacity="0.85" pointer-events="none"/>
+
+  <!-- RIGHT sector + white arrow -->
+  <path class="dpad-sector" d="M 292.256 206.547 L 353.006 144.537 C 403.15 199.411 405.78 281.844 359.491 336.694 L 295.305 273.812 C 308.703 253.633 307.566 226.472 292.255 206.546 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" onclick="alert('RIGHT')"/>
+  <path d="M 350.005 227.016 L 350.005 257.571 L 376.56 242.293 Z" fill="white" opacity="0.85" pointer-events="none"/>
+
+  <!-- DOWN sector + white arrow -->
+  <path class="dpad-sector" d="M 152.636 349.064 L 213.386 287.053 C 233.966 302.208 261.74 302.554 281.729 287.991 L 345.818 350.778 C 291.936 399.044 208.829 398.35 152.637 349.065 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" onclick="alert('DOWN')"/>
+  <path d="M 263.116 335.075 L 233.561 335.075 L 247.838 361.63 Z" fill="white" opacity="0.85" pointer-events="none"/>
+
+  <!-- LEFT sector + white arrow -->
+  <path class="dpad-sector" d="M 199.649 273.028 L 138.726 335.214 C 89.913 280.03 88.115 198.198 134.716 143.966 L 198.806 206.753 C 185.13 226.36 185.526 252.964 199.649 273.028 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" onclick="alert('LEFT')"/>
+  <path d="M 148.898 254.489 L 148.898 224.934 L 122.343 239.212 Z" fill="white" opacity="0.85" pointer-events="none"/>
+
+  <!-- OK button -->
+  <circle cx="248" cy="242" r="55" fill="#1a3a4a" stroke="#4fc3f7" stroke-width="2" style="cursor:pointer;" onclick="alert('OK')"/>
+  <text x="248" y="251" text-anchor="middle" fill="#4fc3f7" font-size="22" font-weight="800" font-family="Arial">OK</text>
+</svg>
+
+</body>
+</html>
