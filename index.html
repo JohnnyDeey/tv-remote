@@ -1310,7 +1310,7 @@
         sendKey(key);
         repeatInterval = setInterval(() => {
           sendKey(key);
-        }, 300);
+        }, 100);
       }, 400);
       // store fired ref so stopRepeat can send single key on quick tap
       window._repeatFired = () => fired;
