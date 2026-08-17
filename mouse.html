@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0a">
+<title>DIGI Mouse</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; user-select:none; -webkit-user-select:none; }
+  
+  :root {
+    --bg: #0a0a0a;
+    --surface: #151515;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --accent: #4fc3f7;
+    --accent-dim: #1a3a4a;
+    --text: #f0f0f0;
+    --text-dim: #888;
+    --red: #ef5350;
+    --green: #66bb6a;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .status-bar h1 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .status-dot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    transition: background 0.3s;
+  }
+  .dot.connected { background: var(--green); }
+
+  /* TRACKPAD */
+  #trackpad {
+    flex: 1;
+    background: var(--surface2);
+    position: relative;
+    touch-action: none;
+    cursor: crosshair;
+  }
+  #trackpad-hint {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: var(--border);
+    font-size: 14px;
+    line-height: 2;
+    pointer-events: none;
+  }
+  #ripple {
+    position: absolute;
+    width: 70px; height: 70px;
+    border-radius: 50%;
+    background: var(--accent);
+    opacity: 0;
+    transform: scale(0);
+    pointer-events: none;
+    transition: transform 0.25s, opacity 0.25s;
+    margin: -35px 0 0 -35px;
+  }
+
+  /* BOTTOM CONTROLS */
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    flex-shrink: 0;
+  }
+  .ctrl-btn {
+    background: var(--surface);
+    border: none;
+    color: var(--text);
+    padding: 16px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.1s;
+  }
+  .ctrl-btn:active { background: var(--surface2); }
+  .ctrl-btn svg { flex-shrink: 0; }
+  .ctrl-btn.accent { color: var(--accent); }
+  .ctrl-btn.danger { color: var(--red); }
+
+  /* KEYBOARD INPUT */
+  .keyboard-bar {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .keyboard-bar input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: var(--text);
+    font-size: 15px;
+    outline: none;
+  }
+  .keyboard-bar input:focus { border-color: var(--accent); }
+  .keyboard-bar button {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-weight: 700;
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  /* SPEED CONTROL */
+  .speed-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .speed-bar label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+  .speed-bar input { flex: 1; accent-color: var(--accent); }
+  .speed-val { font-size: 11px; color: var(--accent); min-width: 24px; }
+
+  /* CONNECT OVERLAY */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.92);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 100;
+    padding: 24px;
+  }
+  .overlay h2 { font-size: 20px; font-weight: 700; }
+  .overlay p { font-size: 14px; color: var(--text-dim); text-align: center; }
+  .overlay input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 15px;
+    outline: none;
+    width: 100%;
+    max-width: 280px;
+    text-align: center;
+  }
+  .overlay input:focus { border-color: var(--accent); }
+  .overlay-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 32px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: #222;
+    color: var(--text);
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    transition: transform 0.3s;
+    z-index: 999;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- CONNECT OVERLAY -->
+<div class="overlay" id="overlay">
+  <div style="font-size:36px;">🖱️</div>
+  <h2>DIGI Mouse</h2>
+  <p>Connect to your decoder bridge</p>
+  <input id="bridge-input" type="text" value="192.168.68.100" placeholder="192.168.68.100">
+  <button class="overlay-btn" onclick="startConnect()">Connect</button>
+  <a href="index.html" style="color:var(--text-dim);font-size:13px;text-decoration:none;">← Back to Remote</a>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- STATUS BAR -->
+<div class="status-bar">
+  <h1>🖱️ DIGI Mouse</h1>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div class="status-dot">
+      <div class="dot" id="dot"></div>
+      <span id="status-text">Connecting…</span>
+    </div>
+    <a href="index.html" style="color:var(--text-dim);font-size:12px;text-decoration:none;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 8px;">Remote</a>
+  </div>
+</div>
+
+<!-- TRACKPAD -->
+<div id="trackpad">
+  <div id="trackpad-hint">☝ Slide to move cursor<br>Tap to click</div>
+  <div id="ripple"></div>
+</div>
+
+<!-- SPEED BAR -->
+<div class="speed-bar">
+  <label>Speed</label>
+  <input type="range" id="speed-slider" min="1" max="20" value="8" oninput="updateSpeed(this.value)">
+  <span class="speed-val" id="speed-val">8</span>
+</div>
+
+<!-- KEYBOARD BAR -->
+<div class="keyboard-bar">
+  <input id="kb-input" type="text" placeholder="Type here → sends to decoder…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="onType(this.value)">
+  <button onclick="sendEnter()">↵</button>
+</div>
+
+<!-- BOTTOM CONTROLS -->
+<div class="controls">
+  <button class="ctrl-btn" onclick="sendKey(4)">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+    Back
+  </button>
+  <button class="ctrl-btn accent" onclick="sendKey(3)">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
+    Home
+  </button>
+  <button class="ctrl-btn accent" onclick="doClick()">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+    Click
+  </button>
+  <button class="ctrl-btn danger" onclick="sendKey(67)">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2" stroke-linecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+    Del
+  </button>
+</div>
+
+<script>
+  let ws = null;
+  let BRIDGE_IP = localStorage.getItem('mouse_bridge_ip') || '192.168.68.100';
+  let SENS = parseFloat(localStorage.getItem('mouse_speed') || '8');
+  let lastSentText = '';
+
+  document.getElementById('bridge-input').value = BRIDGE_IP;
+  document.getElementById('speed-slider').value = SENS;
+  document.getElementById('speed-val').textContent = SENS;
+
+  function startConnect() {
+    BRIDGE_IP = document.getElementById('bridge-input').value.trim();
+    localStorage.setItem('mouse_bridge_ip', BRIDGE_IP);
+    document.getElementById('overlay').style.display = 'none';
+    connect();
+  }
+
+  function connect() {
+    setStatus(false, 'Connecting…');
+    const url = 'ws://' + BRIDGE_IP + ':8765';
+    ws = new WebSocket(url);
+    ws.onopen = () => { setStatus(true, 'Connected'); showToast('✓ Connected'); };
+    ws.onerror = () => setStatus(false, 'Error');
+    ws.onclose = () => { setStatus(false, 'Disconnected'); setTimeout(connect, 5000); };
+  }
+
+  function setStatus(ok, text) {
+    document.getElementById('dot').className = 'dot' + (ok ? ' connected' : '');
+    document.getElementById('status-text').textContent = text;
+  }
+
+  function send(data) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    ws.send(JSON.stringify(data));
+  }
+
+  function sendKey(keycode) {
+    send({ action:'key', keycode });
+  }
+
+  function sendEnter() {
+    send({ action:'key', keycode: 66 });
+    document.getElementById('kb-input').value = '';
+    lastSentText = '';
+  }
+
+  function doClick() {
+    send({ action:'key', keycode: 23 });
+    const r = document.getElementById('ripple');
+    r.style.opacity = '0.3';
+    r.style.transform = 'scale(1)';
+    setTimeout(() => { r.style.opacity='0'; r.style.transform='scale(0)'; }, 280);
+  }
+
+  function updateSpeed(val) {
+    SENS = parseFloat(val);
+    localStorage.setItem('mouse_speed', SENS);
+    document.getElementById('speed-val').textContent = SENS;
+  }
+
+  // Real-time typing
+  function onType(val) {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (val.length > lastSentText.length) {
+      const newChar = val.slice(lastSentText.length);
+      send({ action:'text', text: newChar });
+    } else if (val.length < lastSentText.length) {
+      const diff = lastSentText.length - val.length;
+      for (let i = 0; i < diff; i++) send({ action:'key', keycode: 67 });
+    }
+    lastSentText = val;
+  }
+
+  // Keyboard Enter key
+  document.getElementById('kb-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); sendEnter(); }
+  });
+
+  // TRACKPAD
+  (function() {
+    const pad = document.getElementById('trackpad');
+    const ripple = document.getElementById('ripple');
+    const hint = document.getElementById('trackpad-hint');
+    let lx=null, ly=null, isTap=false, totalMove=0, ax=0, ay=0;
+
+    function move(dx, dy) {
+      send({ action:'mouse_move', dx:Math.round(dx), dy:Math.round(dy) });
+    }
+
+    function click() {
+      send({ action:'mouse_tap' });
+      ripple.style.opacity='0.3'; ripple.style.transform='scale(1)';
+      setTimeout(()=>{ ripple.style.opacity='0'; ripple.style.transform='scale(0)'; }, 280);
+    }
+
+    pad.addEventListener('touchstart', e=>{ e.preventDefault();
+      const t=e.touches[0]; lx=t.clientX; ly=t.clientY; totalMove=0; isTap=true; ax=0; ay=0;
+      hint.style.display='none';
+      // position ripple
+      const rect=pad.getBoundingClientRect();
+      ripple.style.left=(t.clientX-rect.left)+'px';
+      ripple.style.top=(t.clientY-rect.top)+'px';
+    },{passive:false});
+
+    pad.addEventListener('touchmove', e=>{ e.preventDefault();
+      const t=e.touches[0];
+      const dx=(t.clientX-lx)*SENS, dy=(t.clientY-ly)*SENS;
+      totalMove+=Math.abs(t.clientX-lx)+Math.abs(t.clientY-ly);
+      if(totalMove>6) isTap=false;
+      ax+=dx; ay+=dy;
+      const ix=Math.trunc(ax), iy=Math.trunc(ay);
+      if(ix||iy){ move(ix,iy); ax-=ix; ay-=iy; }
+      lx=t.clientX; ly=t.clientY;
+    },{passive:false});
+
+    pad.addEventListener('touchend', e=>{ e.preventDefault();
+      if(isTap) click();
+      lx=null; ly=null;
+    },{passive:false});
+
+    // Mouse support for laptop testing
+    let md=false;
+    pad.addEventListener('mousedown', e=>{ md=true; lx=e.clientX; ly=e.clientY; totalMove=0; isTap=true; ax=0; ay=0; hint.style.display='none'; });
+    window.addEventListener('mousemove', e=>{ if(!md) return;
+      const dx=(e.clientX-lx)*SENS, dy=(e.clientY-ly)*SENS;
+      totalMove+=Math.abs(e.clientX-lx)+Math.abs(e.clientY-ly);
+      if(totalMove>6) isTap=false;
+      ax+=dx; ay+=dy;
+      const ix=Math.trunc(ax), iy=Math.trunc(ay);
+      if(ix||iy){ move(ix,iy); ax-=ix; ay-=iy; }
+      lx=e.clientX; ly=e.clientY;
+    });
+    window.addEventListener('mouseup', ()=>{ if(md&&isTap) click(); md=false; lx=null; });
+  })();
+
+  // TOAST
+  let toastTimer=null;
+  function showToast(msg) {
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer=setTimeout(()=>t.classList.remove('show'), 2500);
+  }
+
+  // Auto connect on load
+  window.onload = () => {
+    const saved = localStorage.getItem('mouse_bridge_ip');
+    if (saved) {
+      BRIDGE_IP = saved;
+      document.getElementById('overlay').style.display = 'none';
+      connect();
+    }
+  };
+
+  // Prevent context menu
+  document.addEventListener('contextmenu', e=>e.preventDefault());
+</script>
+
+</body>
+</html>
