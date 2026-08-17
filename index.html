@@ -1283,7 +1283,7 @@
       window._repeatKey = null;
       repeatTimer = setTimeout(() => {
         digiKey(key);
-        repeatInterval = setInterval(() => digiKey(key), 300);
+        repeatInterval = setInterval(() => digiKey(key), 100);
       }, 400);
       window._digiHoldKey = key;
       return;
