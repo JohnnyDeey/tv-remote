@@ -21,6 +21,10 @@ async def handler(websocket):
                 keycode = data.get("keycode", 0)
                 subprocess.run(ADB + ["input", "keyevent", str(keycode)])
 
+            elif action == "longpress":
+                keycode = data.get("keycode", 0)
+                subprocess.run(ADB + ["input", "keyevent", "--longpress", str(keycode)])
+
             await websocket.send(json.dumps({"status": "ok"}))
 
         except Exception as e:

@@ -480,13 +480,15 @@
 <div class="status-bar">
   <h1 id="app-title">📺 TV Remote</h1>
   <div style="display:flex;align-items:center;gap:10px;">
-    <div class="status-dot" id="tv-status-dot" style="display:flex;">
-      <div class="dot" id="dot"></div>
-      <span id="status-text">Connecting…</span>
+    <div class="status-dot" id="tv-status-dot" style="display:flex;align-items:center;">
+      <span id="status-text">
+        <svg id="tv-wifi-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="#888"/></svg>
+      </span>
     </div>
-    <div class="status-dot" id="digi-status-dot" style="display:none;">
-      <div class="dot" id="digi-dot"></div>
-      <span id="digi-status-text">Disconnected</span>
+    <div class="status-dot" id="digi-status-dot" style="display:none;align-items:center;">
+      <span id="digi-status-text">
+        <svg id="digi-wifi-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round"><path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="#888"/></svg>
+      </span>
     </div>
     <button onclick="showSettings()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:16px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;">⚙</button>
   </div>
@@ -659,9 +661,12 @@
   <div class="section">
     
     <div style="display:flex;gap:8px;">
-      <input id="digi-text-input" type="text" placeholder="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-        style="flex:1;background:var(--surface2);border:1px solid var(--accent);border-radius:10px;padding:10px 14px;color:var(--text);font-size:15px;outline:none;"
-        oninput="digiTypeRealtime(this.value)">
+      <div style="flex:1;position:relative;display:flex;align-items:center;">
+        <input id="digi-text-input" type="text" placeholder="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+          style="width:100%;background:var(--surface2);border:1px solid var(--accent);border-radius:10px;padding:10px 36px 10px 14px;color:var(--text);font-size:15px;outline:none;"
+          oninput="digiTypeRealtime(this.value)">
+        <button onclick="clearDigiInput()" style="position:absolute;right:8px;background:none;border:none;color:var(--text-dim);font-size:16px;cursor:pointer;padding:2px 4px;line-height:1;">✕</button>
+      </div>
       <button onclick="digiSendText()" style="background:var(--accent);color:#000;border:none;border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round">
           <polyline points="9 10 4 15 9 20"/>
@@ -864,14 +869,22 @@
   }
 
   function setStatus(ok, text) {
-    document.getElementById('dot').className = 'dot' + (ok ? ' connected' : '');
-    document.getElementById('status-text').textContent = text;
+    const color = ok ? '#66bb6a' : '#ef5350';
+    const icon = document.getElementById('tv-wifi-icon');
+    if (icon) {
+      icon.querySelectorAll('path,circle,line').forEach(el => el.setAttribute('stroke', color));
+      const circle = icon.querySelector('circle');
+      if (circle) circle.setAttribute('fill', color);
+    }
   }
   function setDigiStatus(ok, text) {
-    const dot = document.getElementById('digi-dot');
-    const txt = document.getElementById('digi-status-text');
-    if (dot) dot.className = 'dot' + (ok ? ' connected' : '');
-    if (txt) txt.textContent = text;
+    const color = ok ? '#66bb6a' : '#ef5350';
+    const icon = document.getElementById('digi-wifi-icon');
+    if (icon) {
+      icon.querySelectorAll('path,circle,line').forEach(el => el.setAttribute('stroke', color));
+      const circle = icon.querySelector('circle');
+      if (circle) circle.setAttribute('fill', color);
+    }
   }
 
   // ─── SEND KEY ─────────────────────────────────────────────
@@ -1026,6 +1039,12 @@
       }
     }
     lastSentText = val;
+  }
+
+  function clearDigiInput() {
+    const input = document.getElementById('digi-text-input');
+    input.value = '';
+    lastSentText = '';
   }
 
   function digiSendText() {
@@ -1271,6 +1290,15 @@
       window._repeatKey = key;
     }
   }
+
+  // Global safety net - stop repeat on any touch end anywhere
+  document.addEventListener('touchend', () => {
+    clearTimeout(repeatTimer);
+    clearInterval(repeatInterval);
+    repeatTimer = null;
+    repeatInterval = null;
+    window._digiHoldKey = null;
+  }, { passive: true });
 
   function stopRepeat() {
     if (window._digiHoldKey) {

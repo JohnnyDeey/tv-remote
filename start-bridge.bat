@@ -26,4 +26,8 @@ C:\Users\johndamilola.s\AppData\Roaming\Python\Python313\site-packages\adbutils\
 C:\Users\johndamilola.s\AppData\Roaming\Python\Python313\site-packages\adbutils\binaries\adb.exe -s 192.168.68.100:5555 shell "input text '/sdcard/dbridge.py'"
 timeout /t 1
 C:\Users\johndamilola.s\AppData\Roaming\Python\Python313\site-packages\adbutils\binaries\adb.exe -s 192.168.68.100:5555 shell "input keyevent 66"
+timeout /t 2
+C:\Users\johndamilola.s\AppData\Roaming\Python\Python313\site-packages\adbutils\binaries\adb.exe -s 192.168.68.100:5555 shell "input text 'python%s/sdcard/mbridge.py%s&'"
+timeout /t 1
+C:\Users\johndamilola.s\AppData\Roaming\Python\Python313\site-packages\adbutils\binaries\adb.exe -s 192.168.68.100:5555 shell "input keyevent 66"
 echo Bridge started!

@@ -4,7 +4,7 @@ import subprocess
 import websockets
 
 PORT = 8766
-ADB = ["/data/data/com.termux/files/usr/bin/adb", "-s", "emulator-5554", "shell"]
+ADB = ["/data/data/com.termux/files/usr/bin/adb", "-s", "localhost:5555", "shell"]
 SCREEN_W = 1920
 SCREEN_H = 1080
 cur_x = SCREEN_W // 2
@@ -20,12 +20,14 @@ async def handler(websocket):
             if action == "mouse_move":
                 dx = data.get("dx", 0)
                 dy = data.get("dy", 0)
-                new_x = max(0, min(SCREEN_W, cur_x + dx))
-                new_y = max(0, min(SCREEN_H, cur_y + dy))
-                subprocess.run(ADB + ["input", "mouse", "motionevent", "MOVE",
-                    str(int(new_x)), str(int(new_y))])
-                cur_x = new_x
-                cur_y = new_y
+                steps_x = int(dx / 15)
+                steps_y = int(dy / 15)
+                key_x = 22 if steps_x > 0 else 21
+                key_y = 20 if steps_y > 0 else 19
+                for _ in range(abs(steps_x)):
+                    subprocess.run(ADB + ["input", "keyevent", str(key_x)])
+                for _ in range(abs(steps_y)):
+                    subprocess.run(ADB + ["input", "keyevent", str(key_y)])
 
             elif action == "mouse_tap":
                 subprocess.run(ADB + ["input", "mouse", "motionevent", "DOWN",
