@@ -21,6 +21,13 @@ async def handler(websocket):
                 keycode = data.get("keycode", 0)
                 subprocess.run(ADB + ["input", "keyevent", str(keycode)])
 
+            elif action == "ping_tv":
+                import subprocess as sp
+                result = sp.run(["ping", "-c", "1", "-W", "1", "192.168.68.106"], capture_output=True)
+                reachable = result.returncode == 0
+                await websocket.send(json.dumps({"status": "ok", "reachable": reachable}))
+                continue
+
             elif action == "wol":
                 import socket
                 mac = "74:24:ca:d7:c6:03"
