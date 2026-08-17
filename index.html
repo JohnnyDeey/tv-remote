@@ -736,10 +736,10 @@
       <!-- DPAD CIRCLE -->
       <div style="position:relative;width:170px;height:170px;flex-shrink:0;">
         <svg width="170" height="170" viewBox="0 0 220 220" style="position:absolute;top:0;left:0;">
-          <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="digiKey('up')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333'" ontouchend="event.preventDefault();this.style.fill='#1e1e1e';digiKey('up')"/>
-          <path d="M110,110 L205,15 A134,134 0 0,1 205,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="digiKey('right')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333'" ontouchend="event.preventDefault();this.style.fill='#1e1e1e';digiKey('right')"/>
-          <path d="M110,110 L205,205 A134,134 0 0,1 15,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="digiKey('down')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333'" ontouchend="event.preventDefault();this.style.fill='#1e1e1e';digiKey('down')"/>
-          <path d="M110,110 L15,205 A134,134 0 0,1 15,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onclick="digiKey('left')" onmousedown="this.style.fill='#333'" onmouseup="this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333'" ontouchend="event.preventDefault();this.style.fill='#1e1e1e';digiKey('left')"/>
+          <path d="M110,110 L15,15 A134,134 0 0,1 205,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="this.style.fill='#333';startRepeat('up','digi')" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333';startRepeat('up','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L205,15 A134,134 0 0,1 205,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="this.style.fill='#333';startRepeat('right','digi')" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333';startRepeat('right','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L205,205 A134,134 0 0,1 15,205 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="this.style.fill='#333';startRepeat('down','digi')" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333';startRepeat('down','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
+          <path d="M110,110 L15,205 A134,134 0 0,1 15,15 Z" fill="#1e1e1e" stroke="#2a2a2a" stroke-width="1.5" style="cursor:pointer;" onmousedown="this.style.fill='#333';startRepeat('left','digi')" onmouseup="stopRepeat();this.style.fill='#1e1e1e'" onmouseleave="stopRepeat();this.style.fill='#1e1e1e'" ontouchstart="event.preventDefault();this.style.fill='#333';startRepeat('left','digi')" ontouchend="event.preventDefault();stopRepeat();this.style.fill='#1e1e1e'"/>
           <text x="110" y="52" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▲</text>
           <text x="170" y="116" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▶</text>
           <text x="110" y="180" text-anchor="middle" fill="#f0f0f0" font-size="18" pointer-events="none">▼</text>
@@ -958,6 +958,45 @@
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+ let digiRepeatTimer = null;
+  let digiRepeatInterval = null;
+  
+  function startDigiHold(key) {
+    digiRepeatTimer = setTimeout(() => {
+      digiRepeatInterval = setInterval(() => digiKey(key), 300);
+    }, 500);
+  }
+  
+  function stopDigiHold() {
+    clearTimeout(digiRepeatTimer);
+    clearInterval(digiRepeatInterval);
+    digiRepeatTimer = null;
+    digiRepeatInterval = null;
+  }
+  
+  window.startDigiRepeat = function(key) {
+    digiTapFired = false;
+    digiRepeatTimer = setTimeout(() => {
+      digiTapFired = true;
+      digiKey(key);
+      digiRepeatInterval = setInterval(() => digiKey(key), 300);
+    }, 400);
+    window._digiKey = key;
+  }
+
+  window.stopDigiRepeat = function() {
+    if (!digiTapFired && window._digiKey) {
+      digiKey(window._digiKey);
+    }
+    window._digiKey = null;
+    clearTimeout(digiRepeatTimer);
+    clearInterval(digiRepeatInterval);
+    digiRepeatTimer = null;
+    digiRepeatInterval = null;
+  }
+
+  
 
   let isPlaying = false;
   function togglePlayPause() {
@@ -1239,6 +1278,16 @@
   }
 
   function startRepeat(key, type, delta) {
+    if (type === 'digi') {
+      window._repeatFired = () => false;
+      window._repeatKey = null;
+      repeatTimer = setTimeout(() => {
+        digiKey(key);
+        repeatInterval = setInterval(() => digiKey(key), 300);
+      }, 400);
+      window._digiHoldKey = key;
+      return;
+    }
     if (type === 'vol' && delta) {
       // Vol: send immediately then repeat
       sendKey(key);
@@ -1270,6 +1319,15 @@
   }
 
   function stopRepeat() {
+    if (window._digiHoldKey) {
+      clearTimeout(repeatTimer);
+      clearInterval(repeatInterval);
+      repeatTimer = null;
+      repeatInterval = null;
+      if (!repeatInterval) digiKey(window._digiHoldKey);
+      window._digiHoldKey = null;
+      return;
+    }
     const shouldSend = window._repeatFired && !window._repeatFired() && window._repeatKey;
     const keyToSend = window._repeatKey;
     window._repeatFired = null;

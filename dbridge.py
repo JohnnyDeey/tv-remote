@@ -4,7 +4,7 @@ import subprocess
 import websockets
 
 PORT = 8765
-ADB = ["/data/data/com.termux/files/usr/bin/adb", "-s", "emulator-5554", "shell"]
+ADB = ["/data/data/com.termux/files/usr/bin/adb", "-s", "localhost:5555", "shell"]
 
 async def handler(websocket):
     async for message in websocket:
