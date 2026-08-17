@@ -21,6 +21,16 @@ async def handler(websocket):
                 keycode = data.get("keycode", 0)
                 subprocess.run(ADB + ["input", "keyevent", str(keycode)])
 
+            elif action == "wol":
+                import socket
+                mac = "74:24:ca:d7:c6:03"
+                mac_bytes = bytes.fromhex(mac.replace(":", ""))
+                magic = b'\xff' * 6 + mac_bytes * 16
+                sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+                sock.sendto(magic, ('255.255.255.255', 9))
+                sock.close()
+
             elif action == "longpress":
                 keycode = data.get("keycode", 0)
                 subprocess.run(ADB + ["input", "keyevent", "--longpress", str(keycode)])

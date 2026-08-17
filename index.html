@@ -518,7 +518,7 @@
   <!-- TOP ROW: POWER / SOURCE / SETTINGS -->
   <div class="section">
     <div class="top-row">
-      <button class="btn power" onclick="sendKey('KEY_POWER')">
+      <button class="btn power" onclick="tvPower()">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2.5" stroke-linecap="round">
           <path d="M12 3v9"/>
           <path d="M6.3 5.3a9 9 0 1 0 11.4 0"/>
@@ -939,6 +939,21 @@
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function tvPower() {
+    if (connected) {
+      // TV is on — send power off
+      sendKey('KEY_POWER');
+    } else {
+      // TV is off — send WOL via decoder bridge
+      if (digiWs && digiWs.readyState === WebSocket.OPEN) {
+        digiWs.send(JSON.stringify({ action: 'wol' }));
+        showToast('🔌 Waking TV...');
+      } else {
+        showToast('Connect DIGI decoder first');
+      }
+    }
+  }
 
  let digiRepeatTimer = null;
   let digiRepeatInterval = null;
