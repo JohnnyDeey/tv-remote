@@ -727,7 +727,7 @@
       <div class="vol-ch">
         <div class="vc-group">
           <div class="vc-label" style="pointer-events:none;">VOL</div>
-          <div class="vc-btn" onclick="digiKey('vol_up')">＋</div>
+          <div class="vc-btn" onmousedown="startRepeat('vol_up','digi')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="event.preventDefault();startRepeat('vol_up','digi')" ontouchend="event.preventDefault();stopRepeat()">＋</div>
           <div class="vc-mid" onclick="digiKey('mute')" style="display:flex;align-items:center;justify-content:center;padding:10px;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round">
               <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
@@ -735,7 +735,7 @@
               <line x1="17" y1="9" x2="23" y2="15" stroke="#ef5350"/>
             </svg>
           </div>
-          <div class="vc-btn" onclick="digiKey('vol_down')">－</div>
+          <div class="vc-btn" onmousedown="startRepeat('vol_down','digi')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="event.preventDefault();startRepeat('vol_down','digi')" ontouchend="event.preventDefault();stopRepeat()">－</div>
         </div>
       </div>
 
@@ -1336,13 +1336,13 @@
 
   function startRepeat(key, type, delta) {
     if (type === 'digi') {
-      window._repeatFired = () => false;
+      digiKey(key);
+      window._repeatFired = () => true;
       window._repeatKey = null;
       repeatTimer = setTimeout(() => {
-        digiKey(key);
-        repeatInterval = setInterval(() => digiKey(key), 50);
-      }, 200);
-      window._digiHoldKey = key;
+        repeatInterval = setInterval(() => digiKey(key), 300);
+      }, 500);
+      window._digiHoldKey = null;
       return;
     }
     if (type === 'vol' && delta) {
@@ -1360,30 +1360,28 @@
         }, 300);
       }, 700);
     } else {
-      // Dpad/CH: on quick tap send once, on hold repeat
-      let fired = false;
+      // Dpad/CH: send immediately then repeat on hold
+      sendKey(key);
+      let fired = true;
       repeatTimer = setTimeout(() => {
-        fired = true;
-        sendKey(key);
         repeatInterval = setInterval(() => {
           sendKey(key);
         }, 50);
       }, 150);
-      // store fired ref so stopRepeat can send single key on quick tap
       window._repeatFired = () => fired;
-      window._repeatKey = key;
+      window._repeatKey = null;
     }
   }
 
   
 
   function stopRepeat() {
+    clearTimeout(repeatTimer);
+    clearInterval(repeatInterval);
+    repeatTimer = null;
+    repeatInterval = null;
     if (window._digiHoldKey) {
-      clearTimeout(repeatTimer);
-      clearInterval(repeatInterval);
-      repeatTimer = null;
-      repeatInterval = null;
-      if (!repeatInterval) digiKey(window._digiHoldKey);
+      digiKey(window._digiHoldKey);
       window._digiHoldKey = null;
       return;
     }
@@ -1391,10 +1389,6 @@
     const keyToSend = window._repeatKey;
     window._repeatFired = null;
     window._repeatKey = null;
-    clearTimeout(repeatTimer);
-    clearInterval(repeatInterval);
-    repeatTimer = null;
-    repeatInterval = null;
     if (shouldSend) sendKey(keyToSend);
   }
 
