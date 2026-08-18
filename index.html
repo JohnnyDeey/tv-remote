@@ -846,6 +846,7 @@
 
   // ─── WEBSOCKET ────────────────────────────────────────────
   function connect() {
+    tvState = 'connecting';
     updateWifiIcon('status-text', 'connecting');
     if (ws) { try { ws.close(); } catch(e){} }
 
@@ -865,36 +866,38 @@
       console.log('WS open');
     };
 
-    ws.onmessage = (evt) => {
+        ws.onmessage = (evt) => {
       try {
         const msg = JSON.parse(evt.data);
         if (msg.event === 'ms.channel.connect') {
           connected = true;
+          tvState = 'connected';
           if (msg.data && msg.data.token) {
             token = msg.data.token;
             localStorage.setItem('samsung_tv_token', token);
           }
-          setStatus(true, 'Connected');
+          setTVStatus('connected');
         } else if (msg.event === 'ms.channel.unauthorized') {
           showToast('⚠ Check TV – allow the remote connection');
         } else if (msg.event === 'ms.channel.timeOut') {
           connected = false;
-          setStatus(false, 'Timed out');
+          tvState = 'standby';
+          setTVStatus('standby');
           scheduleReconnect();
         }
       } catch(e) {}
     };
-
     ws.onerror = () => {
       connected = false;
-      setStatus(false, 'Error – retrying');
+      if (tvState === 'connected') tvState = 'standby';
+      else tvState = 'offline';
+      setTVStatus(tvState);
     };
-
     ws.onclose = () => {
       connected = false;
-      setStatus(false, 'Disconnected');
+      if (tvState === 'connected') tvState = 'standby';
+      setTVStatus(tvState);
       scheduleReconnect();
-      setTimeout(checkTVReachable, 1000);
     };
   }
 
@@ -916,6 +919,18 @@
     } else {
       const color = state === 'connected' ? '#66bb6a' : '#ef5350';
       el.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round">${state === 'connected' ? '<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="' + color + '"/>' : '<path d="M1 1l22 22"/><path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/><path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="' + color + '"/>'}</svg>`;
+    }
+  }
+
+  function setTVStatus(state) {
+    if (state === 'connected') {
+      updateWifiIcon('status-text', 'connected');
+    } else if (state === 'standby') {
+      updateWifiIcon('status-text', 'standby');
+    } else if (state === 'connecting') {
+      updateWifiIcon('status-text', 'connecting');
+    } else {
+      updateWifiIcon('status-text', 'disconnected');
     }
   }
 
@@ -978,40 +993,36 @@
     }
   });
 
+  let powerCooldown = false;
   function tvPower() {
-    if (connected) {
+    if (powerCooldown) { showToast('⏳ Please wait...'); return; }
+    if (tvState === 'connected') {
+      powerCooldown = true;
+      setTimeout(() => powerCooldown = false, 10000);
       sendKey('KEY_POWER');
-    } else {
+      tvState = 'standby';
+      setTVStatus('standby');
+    } else if (tvState === 'standby') {
       if (digiWs && digiWs.readyState === WebSocket.OPEN) {
+        powerCooldown = true;
+        setTimeout(() => powerCooldown = false, 12000);
         digiWs.send(JSON.stringify({ action: 'wol' }));
         showToast('🔌 Waking TV...');
+        tvState = 'connecting';
+        setTVStatus('connecting');
         setTimeout(() => { manualDisconnect = false; connect(); }, 8000);
       } else {
-        showToast('Connect DIGI decoder first');
+        showToast('DIGI decoder needed to wake TV');
       }
+    } else if (tvState === 'offline') {
+      showToast('📡 TV not reachable — check network');
+    } else {
+      showToast('⏳ Connecting...');
     }
   }
 
-  function checkTVReachable() {
-    if (!digiWs || digiWs.readyState !== WebSocket.OPEN) return;
-    digiWs.send(JSON.stringify({ action: 'ping_tv' }));
-  }
 
- let digiRepeatTimer = null;
-  let digiRepeatInterval = null;
-  
-  function startDigiHold(key) {
-    digiRepeatTimer = setTimeout(() => {
-      digiRepeatInterval = setInterval(() => digiKey(key), 300);
-    }, 500);
-  }
-  
-  function stopDigiHold() {
-    clearTimeout(digiRepeatTimer);
-    clearInterval(digiRepeatInterval);
-    digiRepeatTimer = null;
-    digiRepeatInterval = null;
-  }
+
   
   window.startDigiRepeat = function(key) {
     digiTapFired = false;
@@ -1085,7 +1096,15 @@
     digiWs = new WebSocket(bridgeUrl);
     digiWs.onopen = () => setDigiStatus(true, 'Connected');
     digiWs.onerror = () => setDigiStatus(false, 'Bridge offline');
-    digiWs.onclose = () => { setDigiStatus(false, 'Disconnected'); setTimeout(connectDigi, 1000); }
+    digiWs.onclose = () => { 
+      setDigiStatus(false, 'Disconnected');
+      digiFailCount++;
+      if (digiFailCount >= 5) {
+        showToast('📡 Toggle WiFi if DIGI keeps failing');
+        digiFailCount = 0;
+      }
+      setTimeout(connectDigi, 1000);
+    }
     digiWs.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
@@ -1638,6 +1657,8 @@
 
   // ─── TRACKPAD ─────────────────────────────────────────────
   let manualDisconnect = false;
+  let tvState = 'offline'; // 'connected' | 'standby' | 'offline' | 'connecting'
+  let digiFailCount = 0;
   let trackpadActive = false;
   let tpSens = parseFloat(localStorage.getItem('tp_sens') || '1.5');
 
