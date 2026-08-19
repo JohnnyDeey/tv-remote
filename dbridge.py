@@ -43,6 +43,31 @@ async def handler(websocket):
                 package = data.get("package", "")
                 subprocess.run(ADB + ["monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1"])
 
+            elif action == "save_app_meta":
+                import json as json_mod
+                pkg = data.get("package", "")
+                name = data.get("name", "")
+                color = data.get("color", "")
+                try:
+                    with open("/sdcard/app_meta.json", "r") as f:
+                        meta = json_mod.load(f)
+                except:
+                    meta = {}
+                if pkg:
+                    meta[pkg] = {"name": name, "color": color}
+                with open("/sdcard/app_meta.json", "w") as f:
+                    json_mod.dump(meta, f)
+
+            elif action == "get_app_meta":
+                import json as json_mod
+                try:
+                    with open("/sdcard/app_meta.json", "r") as f:
+                        meta = json_mod.load(f)
+                except:
+                    meta = {}
+                await websocket.send(json.dumps({"status": "ok", "meta": meta}))
+                continue
+
             elif action == "wol":
                 import socket
                 mac = "74:24:ca:d7:c6:03"

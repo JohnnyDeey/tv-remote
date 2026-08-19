@@ -1007,6 +1007,8 @@
     'com.spocky.projengmenu': 'Projectivy'
   };
 
+  let sharedAppMeta = {};
+
   function showAppsLauncher() {
     if (!digiWs || digiWs.readyState !== WebSocket.OPEN) return;
     
@@ -1019,42 +1021,137 @@
       modal.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <span style="color:#f0f0f0;font-size:16px;font-weight:700;">📱 Apps</span>
-          <button onclick="document.getElementById('apps-modal').remove()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:#f0f0f0;width:32px;height:32px;cursor:pointer;font-size:18px;">✕</button>
+          <button onclick="document.getElementById('apps-modal').remove()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:#ef5350;width:32px;height:32px;cursor:pointer;font-size:18px;">✕</button>
+        </div>
+        <div style="position:relative;display:flex;align-items:center;">
+          <input id="app-search" type="text" placeholder="Search apps..." autocomplete="off"
+            style="width:100%;background:#2a2a2a;border:1px solid #444;border-radius:8px;padding:8px 32px 8px 12px;color:#f0f0f0;font-size:13px;outline:none;"
+            oninput="filterApps(this.value)">
+          <button onclick="document.getElementById('app-search').value='';filterApps('');" 
+            style="position:absolute;right:6px;background:none;border:none;color:#888;font-size:16px;cursor:pointer;line-height:1;">✕</button>
         </div>
         <div id="apps-list" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
-          <div style="color:#888;text-align:center;grid-column:span 2;padding:20px;">Loading apps...</div>
+          <div style="color:#888;text-align:center;grid-column:span 4;padding:20px;">Loading apps...</div>
         </div>`;
       document.body.appendChild(modal);
     } else {
       modal.style.display = 'flex';
     }
 
-    // Fetch apps
+    // Fetch apps and meta
     const handler = (e) => {
       const data = JSON.parse(e.data);
+      if (data.meta) { sharedAppMeta = data.meta; return; }
       if (!data.apps) return;
       digiWs.removeEventListener('message', handler);
       const list = document.getElementById('apps-list');
-      list.innerHTML = data.apps.map(pkg => {
-        const name = APP_NAMES[pkg] || pkg.split('.').pop();
-        const colors = ['#e53935','#8e24aa','#1e88e5','#00897b','#f4511e','#6d4c41','#546e7a','#c62828','#283593','#558b2f'];
-        const color = colors[Math.abs(pkg.split('').reduce((a,c)=>a+c.charCodeAt(0),0)) % colors.length];
-        const letter = name[0].toUpperCase();
-        return `<button onclick="launchApp('${pkg}')" style="background:radial-gradient(circle at 35% 35%,#2a2a2a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#f0f0f0;padding:8px 4px;cursor:pointer;box-shadow:0 4px 0 #000;display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;height:80px;overflow:hidden;">
-          <div style="width:36px;height:36px;border-radius:10px;background:${color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0;">${letter}</div>
-          <span style="font-size:9px;font-weight:600;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px;">${name}</span>
-        </button>`;
-      }).join('');
+      const sortedApps = [...data.apps].sort((a, b) => {
+        const nameA = localStorage.getItem('appname_'+a) || APP_NAMES[a] || a.split('.').pop();
+        const nameB = localStorage.getItem('appname_'+b) || APP_NAMES[b] || b.split('.').pop();
+        return nameA.localeCompare(nameB);
+      });
+            allAppsCache = sortedApps;
+      list.innerHTML = sortedApps.map(pkg => renderAppBtn(pkg)).join('');
     };
     digiWs.addEventListener('message', handler);
+    digiWs.send(JSON.stringify({action: 'get_app_meta'}));
     digiWs.send(JSON.stringify({action: 'get_apps'}));
   }
 
-  function launchApp(pkg) {
+  let allAppsCache = [];
+
+  function renderAppBtn(pkg) {
+    const colors = ['#e53935','#8e24aa','#1e88e5','#00897b','#f4511e','#6d4c41','#546e7a','#c62828','#283593','#558b2f'];
+    const color = (sharedAppMeta[pkg] && sharedAppMeta[pkg].color) || colors[Math.abs(pkg.split('').reduce((a,c)=>a+c.charCodeAt(0),0)) % colors.length];
+    const meta = sharedAppMeta[pkg] || {};
+    const appLabel = meta.name || APP_NAMES[pkg] || pkg.split('.').pop();
+    const letter = appLabel[0].toUpperCase();
+    return `<button onclick="digiLaunchApp('${pkg}')" oncontextmenu="event.preventDefault();renameApp('${pkg}')" ontouchstart="startAppLongPress('${pkg}')" ontouchend="clearAppLongPress()" style="background:radial-gradient(circle at 35% 35%,#2a2a2a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#f0f0f0;padding:8px 4px;cursor:pointer;box-shadow:0 4px 0 #000;display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;height:80px;overflow:hidden;">
+      <div style="width:36px;height:36px;border-radius:10px;background:${color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0;">${letter}</div>
+      <span style="font-size:9px;font-weight:600;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px;">${appLabel}</span>
+    </button>`;
+  }
+
+  function filterApps(query) {
+    const list = document.getElementById('apps-list');
+    if (!list) return;
+    const q = query.toLowerCase().trim();
+    const filtered = q ? allAppsCache.filter(pkg => {
+      const n = ((sharedAppMeta[pkg] && sharedAppMeta[pkg].name) || APP_NAMES[pkg] || pkg.split('.').pop()).toLowerCase();
+      return n.includes(q);
+    }) : allAppsCache;
+    list.innerHTML = filtered.length ? filtered.map(pkg => renderAppBtn(pkg)).join('')
+      : `<div style="color:#888;text-align:center;grid-column:span 4;padding:20px;">No apps found</div>`;
+  }
+
+  function digiLaunchApp(pkg) {
     if (!digiWs || digiWs.readyState !== WebSocket.OPEN) return;
     digiWs.send(JSON.stringify({action: 'launch_app', package: pkg}));
     document.getElementById('apps-modal')?.remove();
-    showToast('Launching ' + (APP_NAMES[pkg] || pkg.split('.').pop()) + '...');
+    const search = document.getElementById('app-search');
+    if (search) search.value = '';
+  }
+
+  let appLongPressTimer = null;
+
+  function startAppLongPress(pkg) {
+    appLongPressTimer = setTimeout(() => renameApp(pkg), 800);
+  }
+
+  function clearAppLongPress() {
+    clearTimeout(appLongPressTimer);
+  }
+
+  const ALL_COLORS = ['#e53935','#c62828','#ad1457','#6a1b9a','#4527a0','#1565c0','#0277bd','#00838f','#2e7d32','#558b2f','#f57f17','#e65100','#4e342e','#37474f','#546e7a','#00897b','#1e88e5','#8e24aa','#f4511e','#6d4c41'];
+
+  function renameApp(pkg) {
+    const current = localStorage.getItem('appname_'+pkg) || APP_NAMES[pkg] || pkg.split('.').pop();
+    const currentColor = localStorage.getItem('appcolor_'+pkg) || '';
+    
+    const modal = document.createElement('div');
+    modal.id = 'rename-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;';
+    modal.innerHTML = `
+      <div style="background:#1e1e1e;border:1px solid #333;border-radius:16px;padding:24px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:16px;">
+        <span style="color:#f0f0f0;font-size:15px;font-weight:700;">Edit App</span>
+        <input id="rename-input" type="text" value="${current}" style="background:#2a2a2a;border:1px solid #4fc3f7;border-radius:8px;padding:10px 12px;color:#f0f0f0;font-size:14px;outline:none;width:100%;">
+        <span style="color:#888;font-size:11px;font-weight:600;">Choose Color</span>
+        <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
+          ${ALL_COLORS.map(c => `
+            <div onclick="selectAppColor('${c}')" id="color_${c.replace('#','')}" style="width:100%;aspect-ratio:1;border-radius:8px;background:${c};cursor:pointer;border:3px solid ${c === currentColor ? '#fff' : 'transparent'};"></div>
+          `).join('')}
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <button onclick="document.getElementById('rename-modal').remove()" style="background:#2a2a2a;border:1px solid #333;border-radius:8px;padding:10px;color:#888;cursor:pointer;">Cancel</button>
+          <button onclick="saveAppName('${pkg}')" style="background:#4fc3f7;border:none;border-radius:8px;padding:10px;color:#000;font-weight:700;cursor:pointer;">Save</button>
+        </div>
+      </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('rename-input').focus();
+    document.getElementById('rename-input').select();
+  }
+
+  let selectedAppColor = '';
+
+  function selectAppColor(color) {
+    selectedAppColor = color;
+    ALL_COLORS.forEach(c => {
+      const el = document.getElementById('color_'+c.replace('#',''));
+      if (el) el.style.border = `3px solid ${c === color ? '#fff' : 'transparent'}`;
+    });
+  }
+
+  function saveAppName(pkg) {
+    const input = document.getElementById('rename-input');
+    const name = input ? input.value.trim() : '';
+    const color = selectedAppColor || (sharedAppMeta[pkg] && sharedAppMeta[pkg].color) || '';
+    if (name && digiWs && digiWs.readyState === WebSocket.OPEN) {
+      digiWs.send(JSON.stringify({ action: 'save_app_meta', package: pkg, name, color }));
+      sharedAppMeta[pkg] = { name, color };
+    }
+    selectedAppColor = '';
+    document.getElementById('rename-modal')?.remove();
+    showAppsLauncher();
   }
 
   // Reconnect immediately when app comes back to foreground
