@@ -867,6 +867,7 @@
         if (msg.event === 'ms.channel.connect') {
           connected = true;
           tvState = 'connected';
+          tvPoweredOff = false;
           if (msg.data && msg.data.token) {
             token = msg.data.token;
             localStorage.setItem('samsung_tv_token', token);
@@ -1061,12 +1062,43 @@
     }
   });
 
-  function tvPower() {
-    if (ws && ws.readyState === WebSocket.OPEN) {
+    function tvPower() {
+    if (connected) {
+      // TV is on — power off and immediately kill the zombie socket
       sendKey('KEY_POWER');
+      setTimeout(() => {
+        manualDisconnect = true; // Stop auto-reconnect
+        if (ws) { try { ws.close(); } catch(e){} ws = null; }
+        connected = false;
+      }, 1000);
     } else {
+      // TV is off — fresh connection attempt with timeout
+      showToast('🔌 Waking TV...');
       manualDisconnect = false;
-      connect();
+      
+      // Try fresh connection
+      const testWs = new WebSocket(`wss://${TV_IP}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}${token ? '&token='+token : ''}`);
+      const timeout = setTimeout(() => {
+        // Connection failed — TV network is asleep — send WoL
+        testWs.close();
+        if (digiWs && digiWs.readyState === WebSocket.OPEN) {
+          digiWs.send(JSON.stringify({ action: 'wol' }));
+        }
+        // Retry connection after WoL
+        setTimeout(() => connect(), 4000);
+        setTimeout(() => connect(), 8000);
+        setTimeout(() => connect(), 13000);
+      }, 2000);
+      
+      testWs.onopen = () => {
+        // TV responded — use this connection
+        clearTimeout(timeout);
+        if (ws) { try { ws.close(); } catch(e){} }
+        ws = testWs;
+        // Send power on
+        sendKey('KEY_POWER');
+      };
+      testWs.onerror = () => clearTimeout(timeout);
     }
   }
 
