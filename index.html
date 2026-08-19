@@ -1089,9 +1089,11 @@
       const timeout = setTimeout(() => {
         // Connection failed — TV network is asleep — send WoL
         testWs.close();
-        if (digiWs && digiWs.readyState === WebSocket.OPEN) {
-          digiWs.send(JSON.stringify({ action: 'wol' }));
-        }
+              if (digiWs && digiWs.readyState === WebSocket.OPEN) {
+        digiWs.send(JSON.stringify({ action: 'wol' }));
+      } else {
+        showToast('⚠️ Connect decoder first to wake TV');
+      }
         // Retry connection after WoL
         setTimeout(() => connect(), 4000);
         setTimeout(() => connect(), 8000);
