@@ -840,24 +840,28 @@
   }
 
   // ─── WEBSOCKET ────────────────────────────────────────────
-  function connect() {
-    tvState = 'connecting';
-    updateWifiIcon('status-text', 'connecting');
-    if (ws) { try { ws.close(); } catch(e){} }
+    let connecting = false;
 
+  function connect() {
+    if (connecting || (ws && ws.readyState === WebSocket.OPEN)) return;
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    connecting = true;
+    tvState = 'connecting';
     const url = token
       ? `wss://${TV_IP}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}&token=${token}`
       : `wss://${TV_IP}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}`;
-
+    const socket = new WebSocket(url);
     try {
-      ws = new WebSocket(url);
+      ws = socket;
     } catch(e) {
-      setStatus(false, 'Failed');
+      connecting = false;
       scheduleReconnect();
       return;
     }
 
     ws.onopen = () => {
+      if (socket !== ws) { try { socket.close(); } catch(e){} return; }
+      connecting = false;
       console.log('WS open');
     };
 
@@ -884,12 +888,16 @@
       } catch(e) {}
     };
     ws.onerror = () => {
+      if (socket !== ws) return;
+      connecting = false;
       connected = false;
       if (tvState === 'connected') tvState = 'standby';
       else tvState = 'offline';
       setTVStatus(tvState);
     };
     ws.onclose = () => {
+      if (socket !== ws) return;
+      connecting = false;
       connected = false;
       if (tvState === 'connected') tvState = 'standby';
       setTVStatus(tvState);
