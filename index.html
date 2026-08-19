@@ -1035,7 +1035,9 @@
         </div>`;
       document.body.appendChild(modal);
     } else {
-      modal.style.display = 'flex';
+      modal.remove();
+      showAppsLauncher();
+      return;
     }
 
     // Fetch apps and meta
@@ -1046,8 +1048,8 @@
       digiWs.removeEventListener('message', handler);
       const list = document.getElementById('apps-list');
       const sortedApps = [...data.apps].sort((a, b) => {
-        const nameA = localStorage.getItem('appname_'+a) || APP_NAMES[a] || a.split('.').pop();
-        const nameB = localStorage.getItem('appname_'+b) || APP_NAMES[b] || b.split('.').pop();
+        const nameA = (sharedAppMeta[a] && sharedAppMeta[a].name) || APP_NAMES[a] || a.split('.').pop();
+        const nameB = (sharedAppMeta[b] && sharedAppMeta[b].name) || APP_NAMES[b] || b.split('.').pop();
         return nameA.localeCompare(nameB);
       });
             allAppsCache = sortedApps;
