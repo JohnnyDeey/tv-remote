@@ -500,6 +500,9 @@
   <div style="display:flex;align-items:center;gap:10px;">
     <div class="status-dot" id="tv-status-dot" style="display:flex;"></div>
     <div class="status-dot" id="digi-status-dot" style="display:none;"></div>
+    <button id="apps-btn" onclick="showAppsLauncher()" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:16px;width:32px;height:32px;cursor:pointer;align-items:center;justify-content:center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    </button>
     <button onclick="showSettings()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:16px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;">⚙</button>
   </div>
 </div>
@@ -936,7 +939,7 @@
   // ─── SEND KEY ─────────────────────────────────────────────
   function sendKey(key) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
-      showToast('Not connected – retrying…');
+
       connect();
       return;
     }
@@ -972,6 +975,79 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+  // ─── APP LAUNCHER ─────────────────────────────────────────
+  const APP_NAMES = {
+    'com.netflix.mediaclient': 'Netflix',
+    'com.wbd.stream': 'Max',
+    'com.uefa.uefatv.androidtv': 'UEFA TV',
+    'org.videolan.vlc': 'VLC',
+    'com.brave.browser': 'Brave',
+    'la.liga.sports.tv.deporte': 'La Liga',
+    'com.termux': 'Termux',
+    'com.movistarplus.androidtv': 'Movistar+',
+    'com.bstar.intl': 'Bilibili',
+    'com.mutv.manutd': 'MUTV',
+    'com.rtve.androidtv': 'RTVE',
+    'com.cricfytv.sports': 'CricFy TV',
+    'org.schabi.newpipe': 'NewPipe',
+    'com.github.libretube': 'LibreTube',
+    'homeworkout.homeworkouts.noequipment': 'Home Workout',
+    'com.alphainventor.filemanager': 'File Manager',
+    'com.uptodown': 'Uptodown',
+    'com.matchplaygames.pool.android': 'Pool Game',
+    'com.spocky.projengmenu': 'Projectivy'
+  };
+
+  function showAppsLauncher() {
+    if (!digiWs || digiWs.readyState !== WebSocket.OPEN) return;
+    
+    // Create modal
+    let modal = document.getElementById('apps-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'apps-modal';
+      modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:999;display:flex;flex-direction:column;padding:16px;gap:10px;overflow-y:auto;';
+      modal.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="color:#f0f0f0;font-size:16px;font-weight:700;">📱 Apps</span>
+          <button onclick="document.getElementById('apps-modal').remove()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:#f0f0f0;width:32px;height:32px;cursor:pointer;font-size:18px;">✕</button>
+        </div>
+        <div id="apps-list" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+          <div style="color:#888;text-align:center;grid-column:span 2;padding:20px;">Loading apps...</div>
+        </div>`;
+      document.body.appendChild(modal);
+    } else {
+      modal.style.display = 'flex';
+    }
+
+    // Fetch apps
+    const handler = (e) => {
+      const data = JSON.parse(e.data);
+      if (!data.apps) return;
+      digiWs.removeEventListener('message', handler);
+      const list = document.getElementById('apps-list');
+      list.innerHTML = data.apps.map(pkg => {
+        const name = APP_NAMES[pkg] || pkg.split('.').pop();
+        const colors = ['#e53935','#8e24aa','#1e88e5','#00897b','#f4511e','#6d4c41','#546e7a','#c62828','#283593','#558b2f'];
+        const color = colors[Math.abs(pkg.split('').reduce((a,c)=>a+c.charCodeAt(0),0)) % colors.length];
+        const letter = name[0].toUpperCase();
+        return `<button onclick="launchApp('${pkg}')" style="background:radial-gradient(circle at 35% 35%,#2a2a2a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#f0f0f0;padding:8px 4px;cursor:pointer;box-shadow:0 4px 0 #000;display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;height:80px;overflow:hidden;">
+          <div style="width:36px;height:36px;border-radius:10px;background:${color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0;">${letter}</div>
+          <span style="font-size:9px;font-weight:600;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px;">${name}</span>
+        </button>`;
+      }).join('');
+    };
+    digiWs.addEventListener('message', handler);
+    digiWs.send(JSON.stringify({action: 'get_apps'}));
+  }
+
+  function launchApp(pkg) {
+    if (!digiWs || digiWs.readyState !== WebSocket.OPEN) return;
+    digiWs.send(JSON.stringify({action: 'launch_app', package: pkg}));
+    document.getElementById('apps-modal')?.remove();
+    showToast('Launching ' + (APP_NAMES[pkg] || pkg.split('.').pop()) + '...');
+  }
+
   // Reconnect immediately when app comes back to foreground
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
@@ -985,57 +1061,19 @@
     }
   });
 
-  let powerCooldown = false;
   function tvPower() {
-    if (powerCooldown) { showToast('⏳ Please wait...'); return; }
-    if (tvState === 'connected') {
-      powerCooldown = true;
-      setTimeout(() => powerCooldown = false, 10000);
+    if (ws && ws.readyState === WebSocket.OPEN) {
       sendKey('KEY_POWER');
-      tvState = 'standby';
-      setTVStatus('standby');
-    } else if (tvState === 'standby') {
-      if (digiWs && digiWs.readyState === WebSocket.OPEN) {
-        powerCooldown = true;
-        setTimeout(() => powerCooldown = false, 12000);
-        digiWs.send(JSON.stringify({ action: 'wol' }));
-        showToast('🔌 Waking TV...');
-        tvState = 'connecting';
-        setTVStatus('connecting');
-        setTimeout(() => { manualDisconnect = false; connect(); }, 8000);
-      } else {
-        showToast('DIGI decoder needed to wake TV');
-      }
-    } else if (tvState === 'offline') {
-      showToast('📡 TV not reachable — check network');
     } else {
-      showToast('⏳ Connecting...');
+      manualDisconnect = false;
+      connect();
     }
   }
 
 
 
   
-  window.startDigiRepeat = function(key) {
-    digiTapFired = false;
-    digiRepeatTimer = setTimeout(() => {
-      digiTapFired = true;
-      digiKey(key);
-      digiRepeatInterval = setInterval(() => digiKey(key), 300);
-    }, 400);
-    window._digiKey = key;
-  }
 
-  window.stopDigiRepeat = function() {
-    if (!digiTapFired && window._digiKey) {
-      digiKey(window._digiKey);
-    }
-    window._digiKey = null;
-    clearTimeout(digiRepeatTimer);
-    clearInterval(digiRepeatInterval);
-    digiRepeatTimer = null;
-    digiRepeatInterval = null;
-  }
 
   
 
@@ -1071,6 +1109,7 @@
     document.getElementById('samsung-remote').style.display = device === 'samsung' ? 'flex' : 'none';
     document.getElementById('digi-remote').style.display = device === 'digi' ? 'flex' : 'none';
     document.getElementById('app-title').textContent = device === 'samsung' ? '📺 TV Remote' : '📡 DIGI Remote';
+    document.getElementById('apps-btn').style.display = device === 'digi' ? 'flex' : 'none';
     const shadow = 'box-shadow:0 4px 0 #0a0a0a,inset 0 1px 0 rgba(255,255,255,0.08);';
     document.getElementById('btn-samsung').style.cssText = device === 'samsung'
       ? `padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;${shadow}`
@@ -1092,7 +1131,6 @@
       setDigiStatus(false, 'Disconnected');
       digiFailCount++;
       if (digiFailCount >= 5) {
-        showToast('📡 Toggle WiFi if DIGI keeps failing');
         digiFailCount = 0;
       }
       setTimeout(connectDigi, 1000);

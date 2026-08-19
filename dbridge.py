@@ -28,6 +28,21 @@ async def handler(websocket):
                 await websocket.send(json.dumps({"status": "ok", "reachable": reachable}))
                 continue
 
+            elif action == "get_apps":
+                result = subprocess.run(
+                    ADB + ["cmd", "package", "list", "packages", "-3"],
+                    capture_output=True, text=True
+                )
+                packages = [line.replace("package:", "").strip() 
+                        for line in result.stdout.strip().split("\n") 
+                        if line.startswith("package:")]
+                await websocket.send(json.dumps({"status": "ok", "apps": packages}))
+                continue
+
+            elif action == "launch_app":
+                package = data.get("package", "")
+                subprocess.run(ADB + ["monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1"])
+
             elif action == "wol":
                 import socket
                 mac = "74:24:ca:d7:c6:03"
