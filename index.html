@@ -460,7 +460,7 @@
   <h2>TV Remote</h2>
   <p>Enter your Samsung TV IP address to connect.<br>Your TV must be on the same WiFi.</p>
   <label class="overlay-label">TV IP Address</label>
-  <input class="overlay-input" id="ip-input" type="text" value="192.168.68.106" placeholder="192.168.68.106" inputmode="decimal">
+  <input class="overlay-input" id="ip-input" type="text" placeholder="e.g. 192.168.68.106" inputmode="decimal">
   <button class="overlay-btn" onclick="startConnect()">Connect to TV</button>
 </div>
 
@@ -476,18 +476,19 @@
     </div>
     <div style="border-top:1px solid var(--border);padding-top:12px;">
       <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px;">CONNECTION</div>
-      <a id="cert-link" href="https://192.168.68.106:8002" target="_blank" style="display:block;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--accent);font-size:11px;font-weight:700;padding:8px;text-align:center;margin-bottom:8px;text-decoration:none;">🔐 Trust Certificate (tap if not connecting)</a>
+      <a id="cert-link" href="#" target="_blank" style="display:block;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--accent);font-size:11px;font-weight:700;padding:8px;text-align:center;margin-bottom:8px;text-decoration:none;">🔐 Trust Certificate (tap if not connecting)</a>
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">TV IP: <span id="settings-ip" style="color:var(--accent);"></span></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <button onclick="closeSettings();document.getElementById('overlay').style.display='flex';" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;padding:10px;cursor:pointer;">Switch TV</button>
-        <button onclick="disconnect();closeSettings();" style="background:transparent;border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:700;padding:10px;cursor:pointer;">Disconnect</button>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input id="tv-ip-input" type="text" placeholder="192.168.68.x" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
+        <button onclick="updateTvIp()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer;">Save</button>
       </div>
+      <button onclick="disconnect();closeSettings();" style="width:100%;background:transparent;border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:700;padding:10px;cursor:pointer;">Disconnect</button>
     </div>
     <div style="border-top:1px solid var(--border);padding-top:12px;">
         <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px;">DIGI BRIDGE</div>
-        <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Bridge IP: <span id="bridge-ip-display" style="color:var(--accent);">192.168.68.100:8765</span></div>
+        <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Bridge IP: <span id="bridge-ip-display" style="color:var(--accent);"></span></div>
         <div style="display:flex;gap:8px;">
-          <input id="bridge-ip-input" type="text" value="192.168.68.100" placeholder="192.168.68.100" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
+          <input id="bridge-ip-input" type="text" placeholder="192.168.68.x" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
           <button onclick="updateBridgeIp()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer;">Save</button>
         </div>
       </div>
@@ -821,7 +822,7 @@
 
 <script>
   // ─── CONFIG ───────────────────────────────────────────────
-  let TV_IP = '192.168.68.106';
+  let TV_IP = localStorage.getItem('tv_ip') || '';
   let ws = null;
   let token = localStorage.getItem('samsung_tv_token') || '';
   let connected = false;
@@ -836,6 +837,7 @@
     TV_IP = input;
     localStorage.setItem('tv_ip', TV_IP);
     document.getElementById('overlay').style.display = 'none';
+    updateCertLink();
     connect();
   }
 
@@ -912,7 +914,7 @@
     }
   }
 
-  function updateWifiIcon(iconId, state) {return;
+  function updateWifiIcon(iconId, state) {
     // state: 'connected' | 'disconnected' | 'connecting' | 'standby'
     const el = document.getElementById(iconId);
     if (!el) return;
@@ -928,21 +930,21 @@
 
   function setTVStatus(state) {
     if (state === 'connected') {
-      updateWifiIcon('status-text', 'connected');
+      updateWifiIcon('tv-status-dot', 'connected');
     } else if (state === 'standby') {
-      updateWifiIcon('status-text', 'standby');
+      updateWifiIcon('tv-status-dot', 'standby');
     } else if (state === 'connecting') {
-      updateWifiIcon('status-text', 'connecting');
+      updateWifiIcon('tv-status-dot', 'connecting');
     } else {
-      updateWifiIcon('status-text', 'disconnected');
+      updateWifiIcon('tv-status-dot', 'disconnected');
     }
   }
 
   function setStatus(ok, text) {
-    updateWifiIcon('status-text', ok ? 'connected' : text.includes('onnect') && !ok ? 'connecting' : 'disconnected');
+    updateWifiIcon('tv-status-dot', ok ? 'connected' : text.includes('onnect') && !ok ? 'connecting' : 'disconnected');
   }
   function setDigiStatus(ok, text) {
-    updateWifiIcon('digi-status-text', ok ? 'connected' : text.includes('onnect') && !ok ? 'connecting' : 'disconnected');
+    updateWifiIcon('digi-status-dot', ok ? 'connected' : text.includes('onnect') && !ok ? 'connecting' : 'disconnected');
   }
 
   // ─── SEND KEY ─────────────────────────────────────────────
@@ -1235,7 +1237,7 @@
 
   // ─── DIGI DECODER ─────────────────────────────────────────
   let currentDevice = localStorage.getItem('last_device') || 'samsung';
-  const BRIDGE = 'ws://' + (localStorage.getItem('bridge_ip') || '192.168.68.100') + ':8765';
+  const BRIDGE = 'ws://' + (localStorage.getItem('bridge_ip') || '') + ':8765';
   let digiWs = null;
 
   const DIGI_KEYS = {
@@ -1268,8 +1270,14 @@
 
   function connectDigi() {
     if (digiWs && digiWs.readyState === WebSocket.OPEN) return;
-    updateWifiIcon('digi-status-text', 'connecting');
-    const bridgeUrl = 'ws://' + (localStorage.getItem('bridge_ip') || '192.168.68.100') + ':8765';
+    const savedBridge = localStorage.getItem('bridge_ip');
+    if (!savedBridge) {
+      updateWifiIcon('digi-status-dot', 'disconnected');
+      showToast('Set DIGI Bridge IP in Settings');
+      return;
+    }
+    updateWifiIcon('digi-status-dot', 'connecting');
+    const bridgeUrl = 'ws://' + savedBridge + ':8765';
     digiWs = new WebSocket(bridgeUrl);
     digiWs.onopen = () => setDigiStatus(true, 'Connected');
     digiWs.onerror = () => setDigiStatus(false, 'Bridge offline');
@@ -1285,7 +1293,10 @@
       try {
         const data = JSON.parse(e.data);
         if (data.reachable !== undefined && !connected) {
-          updateWifiIcon('status-text', data.reachable ? 'standby' : 'disconnected');
+          updateWifiIcon('tv-status-dot', data.reachable ? 'standby' : 'disconnected');
+        }
+        if (data.status === 'error') {
+          showToast('DIGI error: ' + (data.msg || 'unknown'));
         }
       } catch(e) {}
     };
@@ -1618,11 +1629,31 @@
   
 
   
+  function updateCertLink() {
+    document.getElementById('cert-link').href = TV_IP ? `https://${TV_IP}:8002` : '#';
+  }
+
+  function updateTvIp() {
+    const ip = document.getElementById('tv-ip-input').value.trim();
+    if (!ip) return;
+    TV_IP = ip;
+    localStorage.setItem('tv_ip', ip);
+    document.getElementById('settings-ip').textContent = ip;
+    updateCertLink();
+    manualDisconnect = false;
+    if (ws) { try { ws.close(); } catch(e){} ws = null; }
+    connected = false;
+    connect();
+    showToast('TV IP updated');
+  }
+
   function showSettings() {
-    document.getElementById('settings-ip').textContent = TV_IP;
-    const savedIp = localStorage.getItem('bridge_ip') || '192.168.68.100';
+    document.getElementById('settings-ip').textContent = TV_IP || '(not set)';
+    document.getElementById('tv-ip-input').value = TV_IP;
+    updateCertLink();
+    const savedIp = localStorage.getItem('bridge_ip') || '';
     document.getElementById('bridge-ip-input').value = savedIp;
-    document.getElementById('bridge-ip-display').textContent = savedIp + ':8765';
+    document.getElementById('bridge-ip-display').textContent = savedIp ? savedIp + ':8765' : '(not set)';
     document.getElementById('settings-panel').style.display = 'flex';
   }
   function closeSettings() {
@@ -1631,14 +1662,10 @@
   function updateBridgeIp() {
     const ip = document.getElementById('bridge-ip-input').value.trim();
     if (!ip) return;
-    const BRIDGE_URL = 'ws://' + ip + ':8765';
     localStorage.setItem('bridge_ip', ip);
     document.getElementById('bridge-ip-display').textContent = ip + ':8765';
-    if (digiWs) { try { digiWs.close(); } catch(e){} }
-    digiWs = new WebSocket(BRIDGE_URL);
-    digiWs.onopen = () => setStatus(true, 'DIGI Connected');
-    digiWs.onerror = () => setStatus(false, 'Bridge offline');
-    digiWs.onclose = () => setStatus(false, 'DIGI disconnected');
+    if (digiWs) { try { digiWs.close(); } catch(e){} digiWs = null; }
+    connectDigi();
     closeSettings();
     showToast('Bridge IP updated');
   }
@@ -1826,6 +1853,7 @@
     } else {
       document.getElementById('overlay').style.display = 'flex';
     }
+    updateCertLink();
     switchDevice(currentDevice);
 
     

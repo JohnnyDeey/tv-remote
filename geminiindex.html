@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="app-version" content="1.0.0">
+<title>TV & DIGI Remote Control</title>
+
+<style>
+  * { 
+    margin: 0; 
+    padding: 0; 
+    box-sizing: border-box; 
+    -webkit-tap-highlight-color: transparent; 
+    user-select: none; 
+    -webkit-user-select: none; 
+    -webkit-touch-callout: none; 
+  }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #151515;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --accent: #4fc3f7;
+    --accent-dim: #1a3a4a;
+    --text: #f0f0f0;
+    --text-dim: #888;
+    --btn: #1e1e1e;
+    --btn-hover: #2a2a2a;
+    --btn-active: #333;
+    --red: #ef5350;
+    --green: #66bb6a;
+    --yellow: #ffee58;
+    --blue: #42a5f5;
+    --radius: 14px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 12px 32px;
+    overflow-x: hidden;
+  }
+
+  /* STATUS BAR */
+  .status-bar {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 4px 12px;
+  }
+  .status-bar h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--text);
+  }
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  .connecting-dots span {
+    display: inline-block;
+    animation: blink 1s infinite;
+    color: #f9a825;
+    font-size: 18px;
+    font-weight: 900;
+  }
+  .connecting-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .connecting-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  .status-dot {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .dot {
+    width: 8px; 
+    height: 8px;
+    border-radius: 50%;
+    background: var(--red);
+    transition: background 0.3s, box-shadow 0.3s;
+  }
+  .dot.connected { 
+    background: var(--green); 
+    box-shadow: 0 0 8px var(--green);
+  }
+
+  /* REMOTE BODY */
+  .remote {
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* SECTIONS */
+  .section {
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 12px;
+    border: 1px solid var(--border);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  /* TOP ROW - POWER + SOURCE + SETTINGS */
+  .top-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* BUTTON BASE */
+  .btn {
+    background: radial-gradient(circle at 35% 35%, #3a3a3a, #1a1a1a);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    user-select: none;
+    transition: background 0.1s, transform 0.1s, box-shadow 0.1s;
+    -webkit-user-select: none;
+    position: relative;
+    box-shadow: 0 6px 0 #000, 0 8px 15px rgba(0,0,0,0.5), inset 0 -4px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12);
+    overflow: hidden;
+  }
+  .btn:active {
+    background: radial-gradient(circle at 35% 35%, #2a2a2a, #151515);
+    box-shadow: 0 2px 0 #000, inset 0 -1px 3px rgba(0,0,0,0.4);
+    transform: translateY(4px);
+  }
+  .btn .icon {
+    font-size: 20px;
+    line-height: 1;
+    color: var(--text);
+  }
+  .btn.power { color: var(--red); }
+  .btn.power .icon { color: var(--red); }
+  .btn.accent-btn { border-color: var(--accent-dim); }
+  .btn.accent-btn .icon { color: var(--accent); }
+
+  /* STREAMING ROW */
+  .stream-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .stream-btn {
+    background: var(--btn);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    padding: 10px 4px;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.1s, transform 0.1s;
+    letter-spacing: 0.3px;
+    box-shadow: 0 4px 0 #000;
+  }
+  .stream-btn:active { background: var(--btn-active); transform: translateY(2px); box-shadow: 0 2px 0 #000; }
+  .stream-btn.netflix { color: #e50914; border-color: rgba(229, 9, 20, 0.3); }
+  .stream-btn.youtube { color: #ff0000; border-color: rgba(255, 0, 0, 0.3); }
+  .stream-btn.prime { color: #00a8e0; border-color: rgba(0, 168, 224, 0.3); }
+  .stream-btn.disney { color: #40a0ff; border-color: rgba(64, 160, 255, 0.3); }
+
+  /* D-PAD & VOL/CH CONTROLS */
+  .dpad-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .vol-ch {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 64px;
+  }
+  .vc-group {
+    background: radial-gradient(circle at 35% 35%, #3a3a3a, #1a1a1a);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    overflow: visible;
+    box-shadow: 0 8px 0 #000, 0 10px 20px rgba(0,0,0,0.5), inset 0 -4px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12);
+  }
+  .vc-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 5px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  .vc-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: background 0.1s;
+    color: var(--text);
+  }
+  .vc-btn:active { background: rgba(255,255,255,0.1); }
+  .vc-mid {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 6px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .vc-mid:active { background: rgba(255,255,255,0.1); }
+
+  /* NAV ROW - BACK HOME MENU */
+  .nav-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+
+  /* COLOR BUTTONS (DIGI & TV TELETEXT) */
+  .color-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .color-btn {
+    height: 36px;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255,255,255,0.1);
+    cursor: pointer;
+    box-shadow: 0 4px 0 #000;
+    transition: transform 0.1s, opacity 0.1s;
+  }
+  .color-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #000; opacity: 0.8; }
+  .color-btn.red { background: var(--red); }
+  .color-btn.green { background: var(--green); }
+  .color-btn.yellow { background: var(--yellow); }
+  .color-btn.blue { background: var(--blue); }
+
+  /* NUMBER PAD */
+  .numpad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .num-btn {
+    background: var(--btn);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    cursor: pointer;
+    padding: 12px 8px;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    user-select: none;
+    -webkit-user-select: none;
+    box-shadow: 0 4px 0 #000;
+    transition: background 0.1s, transform 0.1s;
+  }
+  .num-btn:active { background: var(--btn-active); transform: translateY(2px); box-shadow: 0 2px 0 #000; }
+  .num-btn.del-btn { color: var(--text-dim); font-size: 14px; }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #222;
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 20px;
+    font-size: 13px;
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+    transition: transform 0.3s ease;
+    z-index: 999;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* CONNECT OVERLAY */
+  .overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.88);
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 100;
+    padding: 24px;
+  }
+  .overlay h2 { font-size: 20px; font-weight: 700; }
+  .overlay p { font-size: 14px; color: var(--text-dim); text-align: center; line-height: 1.6; }
+  .overlay-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 32px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .overlay-btn:active { opacity: 0.8; }
+  .overlay-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 16px;
+    color: var(--text);
+    font-size: 15px;
+    outline: none;
+    width: 100%;
+    max-width: 280px;
+    text-align: center;
+  }
+  .overlay-input:focus { border-color: var(--accent); }
+  .overlay-label { font-size: 13px; color: var(--text-dim); }
+
+  /* APP LAUNCHER MODAL */
+  .app-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .app-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .app-card:active { background: var(--btn-active); border-color: var(--accent); }
+  .app-card span { font-size: 11px; font-weight: 600; text-align: center; color: var(--text); }
+</style>
+</head>
+<body>
+
+<!-- CONNECT OVERLAY -->
+<div class="overlay" id="overlay" style="display:none;">
+  <div style="font-size:40px">📺</div>
+  <h2>TV Remote</h2>
+  <p>Enter your Samsung TV IP address to connect.<br>Your TV must be on the same WiFi network.</p>
+  <label class="overlay-label">TV IP Address</label>
+  <input class="overlay-input" id="ip-input" type="text" value="192.168.68.106" placeholder="192.168.68.106" inputmode="decimal">
+  <button class="overlay-btn" onclick="startConnect()">Connect to TV</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- SETTINGS PANEL -->
+<div id="settings-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
+  <div style="width:100%;max-width:340px;background:var(--surface);border-radius:16px;padding:20px;border:1px solid var(--border);display:flex;flex-direction:column;gap:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:16px;font-weight:700;">⚙ Settings & Bridge</span>
+      <button onclick="closeSettings()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    
+    <div style="border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px;">SAMSUNG TV</div>
+      <a id="cert-link" href="https://192.168.68.106:8002" target="_blank" style="display:block;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--accent);font-size:11px;font-weight:700;padding:8px;text-align:center;margin-bottom:8px;text-decoration:none;">🔐 Trust Certificate (Port 8002)</a>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">TV IP: <span id="settings-ip" style="color:var(--accent);">192.168.68.106</span></div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Active Port: <span id="settings-port" style="color:var(--accent);">8002</span></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <button onclick="toggleTvPort()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:11px;font-weight:700;padding:10px;cursor:pointer;">Switch Port (8002/8001)</button>
+        <button onclick="closeSettings();document.getElementById('overlay').style.display='flex';" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;padding:10px;cursor:pointer;">Switch TV IP</button>
+      </div>
+      <button onclick="disconnect();closeSettings();" style="width:100%;background:transparent;border:1px solid var(--red);border-radius:8px;color:var(--red);font-size:12px;font-weight:700;padding:8px;cursor:pointer;">Disconnect</button>
+    </div>
+    
+    <div style="border-top:1px solid var(--border);padding-top:12px;">
+      <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px;">DIGI BRIDGE</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Bridge IP: <span id="bridge-ip-display" style="color:var(--accent);">192.168.68.100:8765</span></div>
+      <div style="display:flex;gap:8px;">
+        <input id="bridge-ip-input" type="text" value="192.168.68.100:8765" placeholder="192.168.68.100:8765" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
+        <button onclick="updateBridgeIp()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer;">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- APPS LAUNCHER MODAL -->
+<div id="apps-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);z-index:200;flex-direction:column;align-items:center;justify-content:center;padding:24px;">
+  <div style="width:100%;max-width:340px;background:var(--surface);border-radius:16px;padding:20px;border:1px solid var(--border);display:flex;flex-direction:column;gap:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:16px;font-weight:700;">🚀 App Launcher</span>
+      <button onclick="closeAppsLauncher()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">✕</button>
+    </div>
+    <div class="app-grid">
+      <div class="app-card" onclick="launchApp('3201907018807', 'Netflix')">
+        <span style="font-size:24px;color:#e50914;">🎬</span>
+        <span>Netflix</span>
+      </div>
+      <div class="app-card" onclick="launchApp('111299001912', 'YouTube')">
+        <span style="font-size:24px;color:#ff0000;">▶️</span>
+        <span>YouTube</span>
+      </div>
+      <div class="app-card" onclick="launchApp('3201512006799', 'Prime Video')">
+        <span style="font-size:24px;color:#00a8e0;">📦</span>
+        <span>Prime Video</span>
+      </div>
+      <div class="app-card" onclick="launchApp('3201601007250', 'Disney+')">
+        <span style="font-size:24px;color:#40a0ff;">🏰</span>
+        <span>Disney+</span>
+      </div>
+      <div class="app-card" onclick="launchApp('3201901017640', 'Spotify')">
+        <span style="font-size:24px;color:#1db954;">🎵</span>
+        <span>Spotify</span>
+      </div>
+      <div class="app-card" onclick="launchApp('org.tizen.browser', 'Web Browser')">
+        <span style="font-size:24px;color:#4fc3f7;">🌐</span>
+        <span>Browser</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REMOTE UI -->
+<div class="status-bar">
+  <h1 id="app-title">📺 TV Remote</h1>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="status-dot" id="tv-status-dot" style="display:flex;">
+      <div class="dot" id="dot-samsung"></div>
+      <span id="label-samsung">TV</span>
+    </div>
+    <div class="status-dot" id="digi-status-dot" style="display:flex;">
+      <div class="dot" id="dot-digi"></div>
+      <span id="label-digi">DIGI</span>
+    </div>
+    <button id="apps-btn" onclick="showAppsLauncher()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:16px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    </button>
+    <button onclick="discoverDevices()" title="Auto-discover devices" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:16px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><circle cx="11" cy="11" r="4"/><circle cx="11" cy="11" r="1" fill="currentColor"/></svg>
+    </button>
+    <button onclick="showSettings()" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:16px;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;">⚙</button>
+  </div>
+</div>
+
+<!-- DEVICE SWITCHER -->
+<div style="width:100%;max-width:380px;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+  <button id="btn-samsung" onclick="switchDevice('samsung')" style="padding:10px;border-radius:10px;border:2px solid var(--accent);background:var(--accent-dim);color:var(--accent);font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a,inset 0 1px 0 rgba(255,255,255,0.08);">📺 Samsung TV</button>
+  <button id="btn-digi" onclick="switchDevice('digi')" style="padding:10px;border-radius:10px;border:1px solid var(--border);background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);color:var(--text-dim);font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a,inset 0 1px 0 rgba(255,255,255,0.08);">📡 DIGI Decoder</button>
+</div>
+
+<!-- SAMSUNG TV REMOTE SECTION -->
+<div class="remote" id="samsung-remote">
+  <!-- TOP ROW: POWER / SOURCE / SETTINGS -->
+  <div class="section">
+    <div class="top-row">
+      <button class="btn power" onclick="tvPower()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 3v9"/>
+          <path d="M6.3 5.3a9 9 0 1 0 11.4 0"/>
+        </svg>
+      </button>
+      <button class="btn accent-btn" onclick="sendKey('KEY_SOURCE')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
+          <rect x="2" y="7" width="20" height="15" rx="2"/>
+          <polyline points="17 2 12 7 7 2"/>
+        </svg>
+      </button>
+      <button class="btn" onclick="sendKey('KEY_MENU')">
+        <span class="icon">⚙️</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- STREAMING SHORTCUTS -->
+  <div class="section">
+    <div class="stream-row">
+      <button class="stream-btn netflix" onclick="launchApp('3201907018807', 'Netflix')">NETFLIX</button>
+      <button class="stream-btn youtube" onclick="launchApp('111299001912', 'YouTube')">YOUTUBE</button>
+      <button class="stream-btn prime" onclick="launchApp('3201512006799', 'Prime')">PRIME</button>
+      <button class="stream-btn disney" onclick="launchApp('3201601007250', 'Disney+')">DISNEY+</button>
+    </div>
+  </div>
+
+  <!-- D-PAD + VOL/CH -->
+  <div class="section">
+    <div class="dpad-section">
+
+      <!-- VOL -->
+      <div class="vol-ch">
+        <div class="vc-group">
+          <div class="vc-label" style="pointer-events:none;">VOL</div>
+          <div class="vc-btn" onmousedown="startRepeat('KEY_VOLUP','vol',1)" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_VOLUP','vol',1)" ontouchend="stopRepeat()">＋</div>
+          <div class="vc-mid" onclick="toggleMute()" id="mute-btn" style="display:flex;align-items:center;justify-content:center;padding:6px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round" id="mute-svg">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <line x1="23" y1="9" x2="17" y2="15" stroke="#ef5350"/>
+              <line x1="17" y1="9" x2="23" y2="15" stroke="#ef5350"/>
+            </svg>
+          </div>
+          <div class="vc-btn" onmousedown="startRepeat('KEY_VOLDOWN','vol',-1)" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_VOLDOWN','vol',-1)" ontouchend="stopRepeat()">－</div>
+        </div>
+      </div>
+
+      <!-- D-PAD CIRCLE -->
+      <div style="position:relative;flex:1;aspect-ratio:1;max-width:170px;max-height:170px;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="90 90 320 320" width="100%" height="100%" style="filter:drop-shadow(0 8px 0 #000) drop-shadow(0 12px 20px rgba(0,0,0,0.8));">
+          <defs>
+            <radialGradient id="sectorGrad" cx="40%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#4a4a4a"/>
+              <stop offset="100%" stop-color="#1e1e1e"/>
+            </radialGradient>
+          </defs>
+          <!-- UP sector -->
+          <path d="M 338.874 130.914 L 277.951 193.101 C 257.967 179.635 231.936 179.534 212.701 192.887 L 148.514 130.004 C 201.815 83.107 283.046 83.527 338.873 130.914 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startRepeat('KEY_UP');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startRepeat('KEY_UP');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 233.182 145.816 L 263.737 145.815 L 248.461 115.26 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- RIGHT sector -->
+          <path d="M 292.256 206.547 L 353.006 144.537 C 403.15 199.411 405.78 281.844 359.491 336.694 L 295.305 273.812 C 308.703 253.633 307.566 226.472 292.255 206.546 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startRepeat('KEY_RIGHT');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startRepeat('KEY_RIGHT');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 350.005 227.016 L 350.005 257.571 L 376.56 242.293 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- DOWN sector -->
+          <path d="M 152.636 349.064 L 213.386 287.053 C 233.966 302.208 261.74 302.554 281.729 287.991 L 345.818 350.778 C 291.936 399.044 208.829 398.35 152.637 349.065 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startRepeat('KEY_DOWN');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startRepeat('KEY_DOWN');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 263.116 335.075 L 233.561 335.075 L 247.838 361.63 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- LEFT sector -->
+          <path d="M 199.649 273.028 L 138.726 335.214 C 89.913 280.03 88.115 198.198 134.716 143.966 L 198.806 206.753 C 185.13 226.36 185.526 252.964 199.649 273.028 Z" fill="url(#sectorGrad)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startRepeat('KEY_LEFT');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startRepeat('KEY_LEFT');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 148.898 254.489 L 148.898 224.934 L 122.343 239.212 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- OK button -->
+          <circle cx="248" cy="242" r="70" fill="var(--accent-dim)" stroke="#4fc3f7" stroke-width="3" style="cursor:pointer;" onclick="sendKey('KEY_ENTER')" onmousedown="this.style.fill='#1e4a5a'" onmouseup="this.style.fill=''" ontouchstart="this.style.fill='#1e4a5a'" ontouchend="this.style.fill=''"/>
+          <text x="248" y="251" text-anchor="middle" fill="#4fc3f7" font-size="26" font-weight="800" font-family="Arial" pointer-events="none">OK</text>
+        </svg>
+      </div>
+
+      <!-- CH -->
+      <div class="vol-ch">
+        <div class="vc-group">
+          <div class="vc-label" style="pointer-events:none;">CH</div>
+          <div class="vc-btn" onmousedown="startRepeat('KEY_CHUP')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_CHUP')" ontouchend="stopRepeat()">＋</div>
+          <div class="vc-mid" onclick="sendKey('KEY_GUIDE')">📋</div>
+          <div class="vc-btn" onmousedown="startRepeat('KEY_CHDOWN')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_CHDOWN')" ontouchend="stopRepeat()">－</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- BACK / HOME / INFO -->
+  <div class="section">
+    <div class="nav-row">
+      <button class="btn" onclick="sendKey('KEY_RETURN')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round">
+          <polyline points="15 18 9 12 15 6"/>
+        </svg>
+      </button>
+      <button class="btn accent-btn" onclick="sendKey('KEY_HOME')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+          <polyline points="9 21 9 12 15 12 15 21"/>
+        </svg>
+      </button>
+      <button class="btn" onmousedown="startRepeat('KEY_DEL')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startRepeat('KEY_DEL')" ontouchend="stopRepeat();" style="font-size:18px;">⌫</button>
+    </div>
+  </div>
+
+  <!-- TV MEDIA CONTROLS -->
+  <div class="section">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;">
+      <button class="btn" onclick="sendKey('KEY_REWIND')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></svg>
+      </button>
+      <button class="btn" id="tv-btn-rew" onclick="sendKey('KEY_LEFT')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="11 19 2 12 11 5 11 19"/><polygon points="22 19 13 12 22 5 22 19"/></svg>
+      </button>
+      <button class="btn accent-btn" onclick="sendKey('KEY_PLAY')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
+          <polygon points="5 3 15 12 5 21 5 3"/>
+        </svg>
+      </button>
+      <button class="btn" id="tv-btn-fwd" onclick="sendKey('KEY_RIGHT')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="13 19 22 12 13 5 13 19"/><polygon points="2 19 11 12 2 5 2 19"/></svg>
+      </button>
+      <button class="btn" onclick="sendKey('KEY_FF')">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- TRACKPAD TOGGLE AREA -->
+  <div class="section">
+    <button onclick="toggleTrackpad()" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;padding:10px;cursor:pointer;">
+      👆 Toggle Swipe Trackpad
+    </button>
+  </div>
+
+  <!-- TRACKPAD -->
+  <div class="section" id="trackpad-section" style="display:none;">
+    <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-align:center;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Trackpad · Swipe to Move · Tap for OK</div>
+    <div id="trackpad" style="width:100%;height:220px;background:var(--surface2);border-radius:12px;border:1px solid var(--border);position:relative;touch-action:none;display:flex;align-items:center;justify-content:center;overflow:hidden;user-select:none;-webkit-user-select:none;cursor:pointer;">
+      <span id="tp-hint" style="color:var(--text-dim);font-size:12px;pointer-events:none;">Slide finger here</span>
+      <div id="tp-ripple" style="position:absolute;width:60px;height:60px;border-radius:50%;background:var(--accent);opacity:0;transform:scale(0);pointer-events:none;transition:transform 0.25s,opacity 0.25s;"></div>
+    </div>
+  </div>
+
+  <!-- NUMBER PAD (TOGGLEABLE) -->
+  <div class="section">
+    <div style="font-size:10px;font-weight:700;color:var(--text-dim);text-align:center;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;">Number Pad</div>
+    <div class="numpad">
+      <button class="num-btn" onclick="sendKey('KEY_1')">1</button>
+      <button class="num-btn" onclick="sendKey('KEY_2')">2</button>
+      <button class="num-btn" onclick="sendKey('KEY_3')">3</button>
+      <button class="num-btn" onclick="sendKey('KEY_4')">4</button>
+      <button class="num-btn" onclick="sendKey('KEY_5')">5</button>
+      <button class="num-btn" onclick="sendKey('KEY_6')">6</button>
+      <button class="num-btn" onclick="sendKey('KEY_7')">7</button>
+      <button class="num-btn" onclick="sendKey('KEY_8')">8</button>
+      <button class="num-btn" onclick="sendKey('KEY_9')">9</button>
+      <button class="num-btn del-btn" onclick="sendKey('KEY_PRECH')">PRE-CH</button>
+      <button class="num-btn" onclick="sendKey('KEY_0')">0</button>
+      <button class="num-btn del-btn" onclick="sendKey('KEY_INFO')">INFO</button>
+    </div>
+  </div>
+</div>
+
+<!-- DIGI DECODER REMOTE SECTION -->
+<div class="remote" id="digi-remote" style="display:none;">
+  <!-- TOP ROW: POWER / MUTE / TV RADIO -->
+  <div class="section">
+    <div class="top-row">
+      <button class="btn power" onclick="sendDigiKey('POWER')">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 3v9"/>
+          <path d="M6.3 5.3a9 9 0 1 0 11.4 0"/>
+        </svg>
+      </button>
+      <button class="btn" onclick="sendDigiKey('MUTE')">
+        <span class="icon">🔇</span>
+      </button>
+      <button class="btn accent-btn" onclick="sendDigiKey('TV_RADIO')">
+        <span class="icon">📻</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- COLOR BUTTONS -->
+  <div class="section">
+    <div class="color-row">
+      <button class="color-btn red" onclick="sendDigiKey('RED')"></button>
+      <button class="color-btn green" onclick="sendDigiKey('GREEN')"></button>
+      <button class="color-btn yellow" onclick="sendDigiKey('YELLOW')"></button>
+      <button class="color-btn blue" onclick="sendDigiKey('BLUE')"></button>
+    </div>
+  </div>
+
+  <!-- D-PAD + VOL/CH -->
+  <div class="section">
+    <div class="dpad-section">
+      <!-- VOL -->
+      <div class="vol-ch">
+        <div class="vc-group">
+          <div class="vc-label" style="pointer-events:none;">VOL</div>
+          <div class="vc-btn" onmousedown="startDigiRepeat('VOL_UP')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startDigiRepeat('VOL_UP')" ontouchend="stopRepeat()">＋</div>
+          <div class="vc-mid" onclick="sendDigiKey('AUDIO')">🔊</div>
+          <div class="vc-btn" onmousedown="startDigiRepeat('VOL_DOWN')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startDigiRepeat('VOL_DOWN')" ontouchend="stopRepeat()">－</div>
+        </div>
+      </div>
+
+      <!-- D-PAD CIRCLE -->
+      <div style="position:relative;flex:1;aspect-ratio:1;max-width:170px;max-height:170px;flex-shrink:0;">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="90 90 320 320" width="100%" height="100%" style="filter:drop-shadow(0 8px 0 #000) drop-shadow(0 12px 20px rgba(0,0,0,0.8));">
+          <defs>
+            <radialGradient id="sectorGradDigi" cx="40%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#4a4a4a"/>
+              <stop offset="100%" stop-color="#1e1e1e"/>
+            </radialGradient>
+          </defs>
+          <!-- UP sector -->
+          <path d="M 338.874 130.914 L 277.951 193.101 C 257.967 179.635 231.936 179.534 212.701 192.887 L 148.514 130.004 C 201.815 83.107 283.046 83.527 338.873 130.914 Z" fill="url(#sectorGradDigi)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startDigiRepeat('UP');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startDigiRepeat('UP');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 233.182 145.816 L 263.737 145.815 L 248.461 115.26 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- RIGHT sector -->
+          <path d="M 292.256 206.547 L 353.006 144.537 C 403.15 199.411 405.78 281.844 359.491 336.694 L 295.305 273.812 C 308.703 253.633 307.566 226.472 292.255 206.546 Z" fill="url(#sectorGradDigi)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startDigiRepeat('RIGHT');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startDigiRepeat('RIGHT');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 350.005 227.016 L 350.005 257.571 L 376.56 242.293 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- DOWN sector -->
+          <path d="M 152.636 349.064 L 213.386 287.053 C 233.966 302.208 261.74 302.554 281.729 287.991 L 345.818 350.778 C 291.936 399.044 208.829 398.35 152.637 349.065 Z" fill="url(#sectorGradDigi)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startDigiRepeat('DOWN');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startDigiRepeat('DOWN');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 263.116 335.075 L 233.561 335.075 L 247.838 361.63 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- LEFT sector -->
+          <path d="M 199.649 273.028 L 138.726 335.214 C 89.913 280.03 88.115 198.198 134.716 143.966 L 198.806 206.753 C 185.13 226.36 185.526 252.964 199.649 273.028 Z" fill="url(#sectorGradDigi)" stroke="#0a0a0a" stroke-width="3" style="cursor:pointer;" onmousedown="startDigiRepeat('LEFT');this.style.fill='#555'" onmouseup="stopRepeat();this.style.fill=''" onmouseleave="stopRepeat();this.style.fill=''" ontouchstart="startDigiRepeat('LEFT');this.style.fill='#555'" ontouchend="event.preventDefault();stopRepeat();this.style.fill=''"/>
+          <path d="M 148.898 254.489 L 148.898 224.934 L 122.343 239.212 Z" fill="white" opacity="0.85" pointer-events="none"/>
+          <!-- OK button -->
+          <circle cx="248" cy="242" r="70" fill="var(--accent-dim)" stroke="#4fc3f7" stroke-width="3" style="cursor:pointer;" onclick="sendDigiKey('OK')" onmousedown="this.style.fill='#1e4a5a'" onmouseup="this.style.fill=''" ontouchstart="this.style.fill='#1e4a5a'" ontouchend="this.style.fill=''"/>
+          <text x="248" y="251" text-anchor="middle" fill="#4fc3f7" font-size="26" font-weight="800" font-family="Arial" pointer-events="none">OK</text>
+        </svg>
+      </div>
+
+      <!-- CH -->
+      <div class="vol-ch">
+        <div class="vc-group">
+          <div class="vc-label" style="pointer-events:none;">CH</div>
+          <div class="vc-btn" onmousedown="startDigiRepeat('CH_UP')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startDigiRepeat('CH_UP')" ontouchend="stopRepeat()">＋</div>
+          <div class="vc-mid" onclick="sendDigiKey('EPG')">📋</div>
+          <div class="vc-btn" onmousedown="startDigiRepeat('CH_DOWN')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="startDigiRepeat('CH_DOWN')" ontouchend="stopRepeat()">－</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- NAV ROW -->
+  <div class="section">
+    <div class="nav-row">
+      <button class="btn" onclick="sendDigiKey('BACK')">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="btn accent-btn" onclick="sendDigiKey('MENU')">
+        <span class="icon">📜</span>
+      </button>
+      <button class="btn" onclick="sendDigiKey('EXIT')" style="color:var(--red);">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- NUMPAD -->
+  <div class="section">
+    <div class="numpad">
+      <button class="num-btn" onclick="sendDigiKey('1')">1</button>
+      <button class="num-btn" onclick="sendDigiKey('2')">2</button>
+      <button class="num-btn" onclick="sendDigiKey('3')">3</button>
+      <button class="num-btn" onclick="sendDigiKey('4')">4</button>
+      <button class="num-btn" onclick="sendDigiKey('5')">5</button>
+      <button class="num-btn" onclick="sendDigiKey('6')">6</button>
+      <button class="num-btn" onclick="sendDigiKey('7')">7</button>
+      <button class="num-btn" onclick="sendDigiKey('8')">8</button>
+      <button class="num-btn" onclick="sendDigiKey('9')">9</button>
+      <button class="num-btn del-btn" onclick="sendDigiKey('SUBTITLE')">SUB</button>
+      <button class="num-btn" onclick="sendDigiKey('0')">0</button>
+      <button class="num-btn del-btn" onclick="sendDigiKey('INFO')">INFO</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // APP STATE
+  let activeDevice = 'samsung'; // 'samsung' or 'digi'
+  let tvIp = localStorage.getItem('tv_ip') || '192.168.68.106';
+  let tvPort = localStorage.getItem('tv_port') || '8002';
+  let bridgeIp = localStorage.getItem('bridge_ip') || '192.168.68.100:8765';
+  let ws = null;
+  let isConnected = false;
+  let isConnecting = false;
+  let repeatTimer = null;
+  let pingInterval = null;
+  let digiBridgeStatus = false;
+  let commandQueue = [];
+
+  // DOM ELEMENTS
+  const overlay = document.getElementById('overlay');
+  const ipInput = document.getElementById('ip-input');
+  const toast = document.getElementById('toast');
+  const settingsPanel = document.getElementById('settings-panel');
+  const dotSamsung = document.getElementById('dot-samsung');
+  const dotDigi = document.getElementById('dot-digi');
+  const appsBtn = document.getElementById('apps-btn');
+
+  // UTILITY FUNCTIONS
+  function vibrate(ms = 30) {
+    if (navigator.vibrate) {
+      try { navigator.vibrate(ms); } catch (e) {}
+    }
+  }
+
+  function showToast(msg, duration = 2500) {
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => {
+      toast.classList.remove('show');
+    }, duration);
+  }
+
+  // INITIALIZATION
+  window.addEventListener('DOMContentLoaded', () => {
+    ipInput.value = tvIp;
+    updateUrlsAndDisplays();
+
+    setupTrackpad();
+    checkDigiBridge();
+    
+    // Auto start TV connection
+    if (tvIp) {
+      connectSamsung();
+    } else {
+      overlay.style.display = 'flex';
+    }
+  });
+
+  function updateUrlsAndDisplays() {
+    const certUrl = `https://${tvIp}:8002`;
+    const httpUrl = `http://${tvIp}:8001`;
+    document.getElementById('settings-ip').textContent = tvIp;
+    if (document.getElementById('settings-port')) document.getElementById('settings-port').textContent = tvPort;
+    document.getElementById('cert-link').href = certUrl;
+    document.getElementById('bridge-ip-input').value = bridgeIp;
+    document.getElementById('bridge-ip-display').textContent = bridgeIp;
+  }
+
+  function toggleTvPort() {
+    tvPort = tvPort === '8002' ? '8001' : '8002';
+    localStorage.setItem('tv_port', tvPort);
+    updateUrlsAndDisplays();
+    showToast(`Switched to Port ${tvPort}`);
+    if (ws) ws.close();
+    connectSamsung();
+  }
+
+  // SAMSUNG WEBSOCKET CONNECTION
+  function connectSamsung() {
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      return;
+    }
+
+    isConnecting = true;
+    const appNameBase64 = btoa(unescape(encodeURIComponent("TV Remote Web")));
+    const savedToken = localStorage.getItem('samsung_token');
+    
+    // Port 8002 uses WSS, Port 8001 uses standard WS
+    const protocol = tvPort === '8002' ? 'wss' : 'ws';
+    let wsUrl = `${protocol}://${tvIp}:${tvPort}/api/v2/channels/samsung.remote.control?name=${appNameBase64}`;
+    if (savedToken) {
+      wsUrl += `&token=${savedToken}`;
+    }
+
+    try {
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = () => {
+        isConnected = true;
+        isConnecting = false;
+        dotSamsung.classList.add('connected');
+        showToast(`Connected to TV (${tvIp}:${tvPort})`);
+        overlay.style.display = 'none';
+
+        startPing();
+
+        // Flush queued commands
+        while (commandQueue.length > 0) {
+          const queuedPayload = commandQueue.shift();
+          try {
+            ws.send(JSON.stringify(queuedPayload));
+          } catch(err) {
+            console.error("Error sending queued command:", err);
+          }
+        }
+      };
+
+      ws.onclose = (evt) => {
+        isConnected = false;
+        isConnecting = false;
+        dotSamsung.classList.remove('connected');
+        stopPing();
+        ws = null;
+      };
+
+      ws.onerror = (err) => {
+        isConnected = false;
+        isConnecting = false;
+        dotSamsung.classList.remove('connected');
+        stopPing();
+        if (ws) { ws.close(); ws = null; }
+
+        if (tvPort === '8002' && !sessionStorage.getItem('fallback_attempted')) {
+          sessionStorage.setItem('fallback_attempted', 'true');
+          console.warn('Port 8002 failed. Trying Port 8001 fallback...');
+          tvPort = '8001';
+          updateUrlsAndDisplays();
+          setTimeout(() => connectSamsung(), 500);
+        } else {
+          sessionStorage.removeItem('fallback_attempted');
+          showToast(`TV unreachable at ${tvIp}. Check TV status.`, 4000);
+        }
+      };
+
+      ws.onmessage = (evt) => {
+        try {
+          const res = JSON.parse(evt.data);
+          if (res.event === 'ms.channel.connect') {
+            const token = res.data?.token;
+            if (token) {
+              localStorage.setItem('samsung_token', token);
+              showToast('TV paired & token stored');
+            }
+          }
+        } catch(e) {}
+      };
+    } catch (e) {
+      isConnecting = false;
+      console.error(e);
+    }
+  }
+
+  function startPing() {
+    stopPing();
+    pingInterval = setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        // Keeps connection alive across idle states
+      }
+    }, 25000);
+  }
+
+  function stopPing() {
+    if (pingInterval) {
+      clearInterval(pingInterval);
+      pingInterval = null;
+    }
+  }
+
+  function startConnect() {
+    const val = ipInput.value.trim();
+    if (!val) return;
+    tvIp = val;
+    localStorage.setItem('tv_ip', tvIp);
+    updateUrlsAndDisplays();
+    connectSamsung();
+  }
+
+  function disconnect() {
+    if (ws) ws.close();
+    isConnected = false;
+    isConnecting = false;
+    dotSamsung.classList.remove('connected');
+    showToast('Disconnected');
+  }
+
+  // SEND KEY TO SAMSUNG TV (QUEUED)
+  function sendKey(keyCmd) {
+    vibrate();
+
+    const payload = {
+      method: "ms.remote.control",
+      params: {
+        Cmd: "Click",
+        DataOfCmd: keyCmd,
+        Option: "false",
+        TypeOfRemote: "SendRemoteKey"
+      }
+    };
+
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify(payload));
+      } catch(e) {
+        showToast('Error sending command');
+      }
+    } else {
+      commandQueue.push(payload);
+      connectSamsung();
+    }
+  }
+
+  function tvPower() {
+    sendKey('KEY_POWER');
+  }
+
+  function toggleMute() {
+    sendKey('KEY_MUTE');
+  }
+
+  // DIGI BRIDGE FUNCTIONS
+  function formatBridgeUrl(ip) {
+    let cleanIp = ip.trim();
+    if (!cleanIp.startsWith('http://') && !cleanIp.startsWith('https://')) {
+      cleanIp = 'http://' + cleanIp;
+    }
+    if (!cleanIp.match(/:\d+$/) && !cleanIp.includes(':', 7)) {
+      cleanIp += ':8765';
+    }
+    return cleanIp;
+  }
+
+  async function checkDigiBridge() {
+    const currentBridge = localStorage.getItem('bridge_ip') || bridgeIp;
+    const dotDigi = document.getElementById('dot-digi');
+
+    return new Promise((resolve) => {
+      const testWs = new WebSocket(`ws://${currentBridge}`);
+
+      testWs.onopen = () => {
+        digiBridgeStatus = true;
+        if (dotDigi) dotDigi.classList.add('connected');
+        testWs.close();
+        resolve(true);
+      };
+
+      testWs.onerror = () => {
+        digiBridgeStatus = false;
+        if (dotDigi) dotDigi.classList.remove('connected');
+        resolve(false);
+      };
+    });
+  }
+
+  async function sendDigiKey(keyCmd) {
+    vibrate();
+    const targetUrl = `${formatBridgeUrl(bridgeIp)}/api/send_key`;
+    try {
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key: keyCmd }),
+        signal: AbortSignal.timeout(2500)
+      });
+      if (res.ok) {
+        dotDigi.classList.add('connected');
+      } else {
+        showToast('DIGI Bridge error');
+      }
+    } catch(e) {
+      showToast('DIGI Bridge unreachable');
+    }
+  }
+
+  function updateBridgeIp() {
+    const val = document.getElementById('bridge-ip-input').value.trim();
+    if (val) {
+      bridgeIp = val;
+      localStorage.setItem('bridge_ip', bridgeIp);
+      document.getElementById('bridge-ip-display').textContent = bridgeIp;
+      showToast('Bridge IP saved');
+      checkDigiBridge();
+    }
+  }
+
+  // HOLD TO REPEAT TIMERS
+  function startRepeat(keyCmd, type = '', dir = 0) {
+    vibrate();
+    sendKey(keyCmd);
+    stopRepeat();
+    repeatTimer = setInterval(() => {
+      sendKey(keyCmd);
+    }, 180);
+  }
+
+  function startDigiRepeat(keyCmd) {
+    vibrate();
+    sendDigiKey(keyCmd);
+    stopRepeat();
+    repeatTimer = setInterval(() => {
+      sendDigiKey(keyCmd);
+    }, 200);
+  }
+
+  function stopRepeat() {
+    if (repeatTimer) {
+      clearInterval(repeatTimer);
+      repeatTimer = null;
+    }
+  }
+
+  // TRACKPAD IMPLEMENTATION
+  function toggleTrackpad() {
+    const tpSection = document.getElementById('trackpad-section');
+    if (tpSection.style.display === 'none') {
+      tpSection.style.display = 'block';
+      tpSection.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      tpSection.style.display = 'none';
+    }
+  }
+
+  function setupTrackpad() {
+    const tp = document.getElementById('trackpad');
+    const ripple = document.getElementById('tp-ripple');
+    let startX = 0, startY = 0;
+    let startTime = 0;
+
+    tp.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      startTime = Date.now();
+    }, { passive: true });
+
+    tp.addEventListener('touchend', (e) => {
+      const endX = e.changedTouches[0].clientX;
+      const endY = e.changedTouches[0].clientY;
+      const dx = endX - startX;
+      const dy = endY - startY;
+      const duration = Date.now() - startTime;
+
+      // Ripple Effect
+      const rect = tp.getBoundingClientRect();
+      ripple.style.left = `${endX - rect.left - 30}px`;
+      ripple.style.top = `${endY - rect.top - 30}px`;
+      ripple.style.opacity = '0.3';
+      ripple.style.transform = 'scale(1)';
+      setTimeout(() => {
+        ripple.style.opacity = '0';
+        ripple.style.transform = 'scale(0)';
+      }, 250);
+
+      if (Math.abs(dx) < 15 && Math.abs(dy) < 15 && duration < 300) {
+        // Tap -> Enter
+        if (activeDevice === 'samsung') sendKey('KEY_ENTER');
+        else sendDigiKey('OK');
+        return;
+      }
+
+      if (Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 30) {
+          if (activeDevice === 'samsung') sendKey('KEY_RIGHT');
+          else sendDigiKey('RIGHT');
+        } else if (dx < -30) {
+          if (activeDevice === 'samsung') sendKey('KEY_LEFT');
+          else sendDigiKey('LEFT');
+        }
+      } else {
+        if (dy > 30) {
+          if (activeDevice === 'samsung') sendKey('KEY_DOWN');
+          else sendDigiKey('DOWN');
+        } else if (dy < -30) {
+          if (activeDevice === 'samsung') sendKey('KEY_UP');
+          else sendDigiKey('UP');
+        }
+      }
+    });
+  }
+
+  // DEVICE SWITCHER
+  function switchDevice(device) {
+    activeDevice = device;
+    vibrate();
+    const btnSamsung = document.getElementById('btn-samsung');
+    const btnDigi = document.getElementById('btn-digi');
+    const samsungRemote = document.getElementById('samsung-remote');
+    const digiRemote = document.getElementById('digi-remote');
+
+    if (device === 'samsung') {
+      samsungRemote.style.display = 'flex';
+      digiRemote.style.display = 'none';
+      btnSamsung.style.borderColor = 'var(--accent)';
+      btnSamsung.style.background = 'var(--accent-dim)';
+      btnSamsung.style.color = 'var(--accent)';
+      btnDigi.style.borderColor = 'var(--border)';
+      btnDigi.style.background = 'radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a)';
+      btnDigi.style.color = 'var(--text-dim)';
+      appsBtn.style.display = 'flex';
+    } else {
+      samsungRemote.style.display = 'none';
+      digiRemote.style.display = 'flex';
+      btnDigi.style.borderColor = 'var(--accent)';
+      btnDigi.style.background = 'var(--accent-dim)';
+      btnDigi.style.color = 'var(--accent)';
+      btnSamsung.style.borderColor = 'var(--border)';
+      btnSamsung.style.background = 'radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a)';
+      btnSamsung.style.color = 'var(--text-dim)';
+      appsBtn.style.display = 'none';
+    }
+  }
+
+  // APP LAUNCHER (QUEUED)
+  function showAppsLauncher() {
+    document.getElementById('apps-modal').style.display = 'flex';
+  }
+  function closeAppsLauncher() {
+    document.getElementById('apps-modal').style.display = 'none';
+  }
+  function launchApp(appId, name) {
+    vibrate();
+    closeAppsLauncher();
+    showToast(`Launching ${name}...`);
+
+    const payload = {
+      method: "ms.channel.emit",
+      params: {
+        event: "ed.apps.launch",
+        to: "host",
+        data: {
+          action_type: "DEEP_LINK",
+          appId: appId
+        }
+      }
+    };
+
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify(payload));
+      } catch(e) {
+        showToast('App launch failed');
+      }
+    } else {
+      commandQueue.push(payload);
+      connectSamsung();
+    }
+  }
+
+  // DISCOVERY
+  function discoverDevices() {
+    showToast('Scanning network...');
+    checkDigiBridge();
+    connectSamsung();
+  }
+
+  // SETTINGS MODAL
+  function showSettings() {
+    if (ipInput) ipInput.value = localStorage.getItem('tv_ip') || tvIp;
+    const bridgeInput = document.getElementById('bridge-ip-input');
+    if (bridgeInput) bridgeInput.value = localStorage.getItem('bridge_ip') || bridgeIp;
+    settingsPanel.style.display = 'flex';
+  }
+
+  function closeSettings() {        
+    settingsPanel.style.display = 'none';
+  }
+
+  function saveSettings() {
+    const newTvIp = ipInput ? ipInput.value.trim() : '';
+    const bridgeInput = document.getElementById('bridge-ip-input');
+    const newBridgeIp = bridgeInput ? bridgeInput.value.trim() : '';
+
+    if (newTvIp) {
+      localStorage.setItem('tv_ip', newTvIp);
+      tvIp = newTvIp;
+    }
+    if (newBridgeIp) {
+      localStorage.setItem('bridge_ip', newBridgeIp);
+      bridgeIp = newBridgeIp;
+    }
+
+    tvPort = '8002';
+    localStorage.setItem('tv_port', '8002');
+    sessionStorage.removeItem('fallback_attempted');
+
+    if (ws) { ws.close(); ws = null; }
+    connectSamsung();
+    checkDigiBridge();
+    closeSettings();
+    showToast('Settings saved & reconnecting...');
+  }
+</script>
+
+</body>
+</html>
