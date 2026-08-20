@@ -1944,9 +1944,9 @@
     return c.toDataURL('image/png');
   }
 
-  const icon192 = makeIconDataUrl(192);
-  const icon512 = makeIconDataUrl(512);
-  const icon32  = makeIconDataUrl(32);
+  const icon192 = 'icon.png';
+  const icon512 = 'icon.png';
+  const icon32  = 'icon.png';
 
   // Favicon
   document.getElementById('favicon-link').href = icon32;
@@ -1959,7 +1959,7 @@
     name: 'TV Remote',
     short_name: 'TV Remote',
     description: 'Samsung TV Remote Control',
-    start_url: './',
+    start_url: '.',
     display: 'standalone',
     background_color: '#0a0a0a',
     theme_color: '#0a0a0a',
@@ -1971,14 +1971,6 @@
   };
   const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
   document.getElementById('manifest-link').href = URL.createObjectURL(blob);
-</script>
-
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-      .then(r => console.log('SW registered'))
-      .catch(e => console.log('SW error', e));
-  }
 </script>
 </body>
 </html>
