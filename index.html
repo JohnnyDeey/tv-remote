@@ -1268,7 +1268,7 @@
     if (device === 'digi' && (!digiWs || digiWs.readyState !== WebSocket.OPEN)) connectDigi();
   }
 
-  function connectDigi() {
+      function connectDigi() {
     if (digiWs && digiWs.readyState === WebSocket.OPEN) return;
     const savedBridge = localStorage.getItem('bridge_ip');
     if (!savedBridge) {
@@ -1281,7 +1281,7 @@
     digiWs = new WebSocket(bridgeUrl);
     digiWs.onopen = () => setDigiStatus(true, 'Connected');
     digiWs.onerror = () => setDigiStatus(false, 'Bridge offline');
-    digiWs.onclose = () => { 
+    digiWs.onclose = () => {
       setDigiStatus(false, 'Disconnected');
       digiFailCount++;
       if (digiFailCount >= 5) {
