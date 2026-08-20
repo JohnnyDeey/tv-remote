@@ -1170,9 +1170,14 @@
   });
 
     function tvPower() {
-    if (connected) {
+    if (ws && ws.readyState === WebSocket.OPEN && connected) {
       // TV is on — power off and immediately kill the zombie socket
       sendKey('KEY_POWER');
+    } else if (ws && ws.readyState === WebSocket.OPEN && !connected) {
+      // WS open but not confirmed yet — wait briefly then retry
+
+      setTimeout(() => tvPower(), 1500);
+      return;
       setTimeout(() => {
         manualDisconnect = true; // Stop auto-reconnect
         if (ws) { try { ws.close(); } catch(e){} ws = null; }
