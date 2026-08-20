@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="theme-color" content="#0a0a0a">
 <title>TV Remote</title>
-<link rel="manifest" href="#" id="manifest-link">
+<link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/svg+xml" id="favicon-link">
 <link rel="apple-touch-icon" id="apple-icon-link">
 <style>
@@ -1969,8 +1969,7 @@
       { src: icon512, sizes: '512x512', type: 'image/png' }
     ]
   };
-  const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
-  document.getElementById('manifest-link').href = URL.createObjectURL(blob);
+
 </script>
 </body>
 </html>
