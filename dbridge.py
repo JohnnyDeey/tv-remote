@@ -27,6 +27,11 @@ async def handler(websocket):
                 reachable = result.returncode == 0
                 await websocket.send(json.dumps({"status": "ok", "reachable": reachable}))
                 continue
+            
+            elif action == "hide_keyboard":
+                subprocess.run(ADB + ["shell", "input", "keyevent", "111"])
+                await websocket.send(json.dumps({"status": "ok"}))
+                continue
 
             elif action == "get_apps":
                 result = subprocess.run(
@@ -81,6 +86,8 @@ async def handler(websocket):
             elif action == "longpress":
                 keycode = data.get("keycode", 0)
                 subprocess.run(ADB + ["input", "keyevent", "--longpress", str(keycode)])
+            elif action == "hide_keyboard":
+                subprocess.run(ADB + ["input", "keyevent", "111"])
 
             await websocket.send(json.dumps({"status": "ok"}))
 

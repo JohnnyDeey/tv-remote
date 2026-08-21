@@ -556,15 +556,10 @@
       </button>
       <button class="btn" onclick="sendKey('KEY_MENU')">
         <span class="icon">⚙️</span>
-      </button>
+            </button>
     </div>
   </div>
-
-  
-
-  
-
-  <!-- D-PAD + VOL/CH -->
+  <!-- TRACKPAD -->
   <div class="section">
     <div class="dpad-section">
 
@@ -675,6 +670,35 @@
       </button>
       <button class="btn" onclick="sendKey('KEY_FF')">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
+      </button>
+    </div>
+  </div>
+  <!-- APP SHORTCUTS -->
+  <div class="section">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
+      <button onclick="launchTvApp('3201907018807','Netflix')" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a;display:flex;flex-direction:column;align-items:center;gap:5px;">
+        <svg width="28" height="18" viewBox="0 0 28 18"><path d="M0 9C0 4 4.7 0 10.5 0c3 0 5.8 1.1 7.8 2.9L28 0v18l-9.7-2.9C16.3 16.9 13.5 18 10.5 18 4.7 18 0 14 0 9z" fill="#E50914"/></svg>
+        <span style="font-size:10px;color:#f0f0f0;font-weight:700;">Netflix</span>
+      </button>
+      <button onclick="launchTvApp('111299001912','YouTube')" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a;display:flex;flex-direction:column;align-items:center;gap:5px;">
+        <svg width="28" height="18" viewBox="0 0 28 18"><rect width="28" height="18" rx="4" fill="#FF0000"/><polygon points="11,4 22,9 11,14" fill="white"/></svg>
+        <span style="font-size:10px;color:#f0f0f0;font-weight:700;">YouTube</span>
+      </button>
+      <button onclick="launchTvApp('3201910019365','Prime Video')" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a;display:flex;flex-direction:column;align-items:center;gap:5px;">
+        <svg width="28" height="18" viewBox="0 0 28 18"><rect width="28" height="18" rx="4" fill="#00A8E0"/><text x="14" y="13" text-anchor="middle" fill="white" font-size="8" font-weight="bold">prime</text></svg>
+        <span style="font-size:10px;color:#f0f0f0;font-weight:700;">Prime</span>
+      </button>
+      <button onclick="launchTvApp('3201901017640','Disney+')" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a;display:flex;flex-direction:column;align-items:center;gap:5px;">
+        <svg width="28" height="18" viewBox="0 0 28 18"><rect width="28" height="18" rx="4" fill="#113CCF"/><text x="14" y="13" text-anchor="middle" fill="white" font-size="7" font-weight="bold">Disney+</text></svg>
+        <span style="font-size:10px;color:#f0f0f0;font-weight:700;">Disney+</span>
+      </button>
+      <button onclick="launchTvApp('3201606009684','Spotify')" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a;display:flex;flex-direction:column;align-items:center;gap:5px;">
+        <svg width="28" height="18" viewBox="0 0 28 18"><rect width="28" height="18" rx="4" fill="#1DB954"/><circle cx="14" cy="9" r="6" fill="#1DB954" stroke="white" stroke-width="0"/><path d="M9 7c3-1 6-1 9 1M9 10c2-1 5-1 8 1M10 13c2-1 4-1 6 1" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/></svg>
+        <span style="font-size:10px;color:#f0f0f0;font-weight:700;">Spotify</span>
+      </button>
+      <button onclick="launchTvApp('3201511006428','Rakuten')" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:10px 4px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a;display:flex;flex-direction:column;align-items:center;gap:5px;">
+        <svg width="28" height="18" viewBox="0 0 28 18"><rect width="28" height="18" rx="4" fill="#BF0000"/><text x="14" y="13" text-anchor="middle" fill="white" font-size="7" font-weight="bold">Rakuten</text></svg>
+        <span style="font-size:10px;color:#f0f0f0;font-weight:700;">Rakuten</span>
       </button>
     </div>
   </div>
@@ -996,6 +1020,14 @@
   }
 
   // ─── LAUNCH APP ───────────────────────────────────────────
+  function launchTvApp(appId, name) {
+    fetch(`http://${TV_IP}:8001/api/v2/applications/${appId}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'}
+    }).then(() => showToast(`🚀 Launching ${name}`))
+      .catch(e => showToast('❌ Could not launch app'));
+  }
+
   function launchApp(appId) {
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       showToast('Not connected');

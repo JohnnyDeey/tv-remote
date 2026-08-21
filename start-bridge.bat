@@ -3,7 +3,7 @@ echo Discovering decoder...
 
 :: Try common IPs
 set DECODER_IP=
-for %%i in (192.168.68.100 192.168.68.107 192.168.1.100 192.168.1.107) do (
+for %%i in (192.168.68.107 192.168.68.100 192.168.1.100 192.168.1.107) do (
     C:\Users\johndamilola.s\AppData\Roaming\Python\Python313\site-packages\adbutils\binaries\adb.exe connect %%i:5555 2>nul | find "connected" >nul
     if not errorlevel 1 (
         set DECODER_IP=%%i
