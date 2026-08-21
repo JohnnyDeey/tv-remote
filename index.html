@@ -824,15 +824,69 @@
 
   <!-- NAV ROW -->
   <div class="section">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;">
       <button class="btn" onclick="digiKey('back')">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round">
           <polyline points="15 18 9 12 15 6"/>
         </svg>
       </button>
+      <button class="btn" onclick="openMousePanel()" title="Mouse">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ce93d8" stroke-width="2" stroke-linecap="round">
+          <rect x="6" y="2" width="12" height="20" rx="6"/>
+          <line x1="12" y1="2" x2="12" y2="10"/>
+          <line x1="6" y1="10" x2="18" y2="10"/>
+        </svg>
+      </button>
       <button class="btn" onmousedown="startRepeat('del','digi')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="event.preventDefault();startRepeat('del','digi')" ontouchend="event.preventDefault();stopRepeat();" style="font-size:22px;padding:16px;">⌫</button>
     </div>
   </div>
+
+<!-- MOUSE PANEL OVERLAY -->
+<div id="mousePanelOverlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000;z-index:9999;flex-direction:column;">
+
+  <!-- LEFT CLICK / RIGHT CLICK zones -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;height:35%;border-bottom:3px solid #333;">
+    <div id="mouseLeftBtn" style="display:flex;align-items:center;justify-content:center;background:#1a1a2e;border-right:2px solid #333;user-select:none;-webkit-user-select:none;">
+      <div style="text-align:center;">
+        <div style="font-size:32px;">🖱️</div>
+        <div style="color:#ce93d8;font-size:13px;margin-top:6px;">LEFT CLICK</div>
+      </div>
+    </div>
+    <div id="mouseRightBtn" style="display:flex;align-items:center;justify-content:center;background:#1a1a2e;user-select:none;-webkit-user-select:none;">
+      <div style="text-align:center;">
+        <div style="font-size:32px;opacity:0.6;">🖱️</div>
+        <div style="color:#888;font-size:13px;margin-top:6px;">RIGHT CLICK</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TRACKPAD zone -->
+  <div id="mouseTrackpad" style="flex:1;background:#0d0d0d;display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none;touch-action:none;position:relative;cursor:none;">
+    <div style="text-align:center;opacity:0.15;pointer-events:none;">
+      <div style="font-size:48px;">☩</div>
+      <div style="color:#fff;font-size:12px;margin-top:8px;">DRAG TO MOVE</div>
+    </div>
+    <div id="mouseTrackpadDot" style="position:absolute;width:28px;height:28px;border-radius:50%;background:rgba(206,147,216,0.5);border:2px solid #ce93d8;pointer-events:none;transform:translate(-50%,-50%);opacity:0;transition:opacity 0.15s;box-shadow:0 0 12px #ce93d8;"></div>
+  </div>
+
+  <!-- BOTTOM BAR -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;height:64px;background:#111;border-top:2px solid #333;">
+    <button onclick="showMouseSettings()" style="background:none;border:none;color:#ce93d8;font-size:24px;cursor:pointer;">⚙️</button>
+    <button onclick="closeMousePanel()" style="background:none;border:none;color:#ef5350;font-size:24px;cursor:pointer;">✕</button>
+  </div>
+</div>
+
+<!-- MOUSE SETTINGS POPUP -->
+<div id="mouseSettingsPopup" style="display:none;position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1e1e2e;border:1px solid #444;border-radius:12px;padding:20px;z-index:10000;width:80%;max-width:320px;">
+  <div style="color:#ce93d8;font-weight:bold;margin-bottom:12px;">Mouse Settings</div>
+  <div style="color:#aaa;font-size:13px;margin-bottom:6px;">Mouse Bridge IP (your PC)</div>
+  <input id="mouseBridgeIpInput" type="text" placeholder="e.g. 192.168.68.103"
+    style="width:100%;padding:8px;border-radius:8px;border:1px solid #555;background:#111;color:#fff;font-size:14px;box-sizing:border-box;margin-bottom:12px;">
+  <div style="color:#aaa;font-size:13px;margin-bottom:6px;">Sensitivity</div>
+  <input id="mouseSensitivity" type="range" min="1" max="20" value="8"
+    style="width:100%;margin-bottom:12px;">
+  <button onclick="saveMouseSettings()" style="width:100%;padding:10px;background:#ce93d8;color:#000;border:none;border-radius:8px;font-weight:bold;cursor:pointer;">Save</button>
+</div>
 
   <!-- MEDIA CONTROLS -->
   <div class="section">
@@ -1078,6 +1132,18 @@
 
   setInterval(pingTVDot, 3000);
   setInterval(pingDigiDot, 1000);
+
+  // ─── MOUSE PANEL ──────────────────────────────────────────
+
+  function openMousePanel() {
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+      const { AppLauncher } = Capacitor.Plugins;
+      AppLauncher.openUrl({ url: 'svarzee.android.apps.adb_mouse' })
+        .catch(() => showToast('ADB Mouse app not installed'));
+    } else {
+      showToast('Mouse available in APK only');
+    }
+  }
 
   async function checkAndUpdate() {
     try {
