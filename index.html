@@ -478,6 +478,7 @@
       <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px;">CONNECTION</div>
 
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">TV IP: <span id="settings-ip" style="color:var(--accent);"></span></div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Device Name: <span id="device-name-display" style="color:var(--accent);"></span></div>
 
       <div style="display:flex;gap:8px;margin-bottom:8px;">
         <input id="tv-ip-input" type="text" placeholder="192.168.68.x" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
@@ -835,7 +836,13 @@
   let connected = false;
   let reconnectTimer = null;
 
-  const APP_NAME = btoa('MyTVRemote');
+  // Generate unique device name per user
+  let deviceName = localStorage.getItem('device_name');
+  if (!deviceName) {
+    deviceName = 'TVRemote-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+    localStorage.setItem('device_name', deviceName);
+  }
+  const APP_NAME = btoa(deviceName);
 
   // ─── OVERLAY ──────────────────────────────────────────────
   function startConnect() {
@@ -1739,6 +1746,8 @@
 
   function showSettings() {
     document.getElementById('settings-ip').textContent = TV_IP || '(not set)';
+    const dn = document.getElementById('device-name-display');
+    if (dn) dn.textContent = localStorage.getItem('device_name') || 'Unknown';
     const verEl = document.getElementById('app-version-display');
     if (verEl) verEl.textContent = typeof CURRENT_VERSION !== 'undefined' ? CURRENT_VERSION : 'PWA';
     document.getElementById('tv-ip-input').value = TV_IP;
