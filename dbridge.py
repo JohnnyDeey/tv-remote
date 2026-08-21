@@ -81,6 +81,8 @@ async def handler(websocket):
                 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
                 sock.sendto(magic, ('255.255.255.255', 9))
+                sock.sendto(magic, ('192.168.68.255', 9))
+                sock.sendto(magic, ('192.168.1.255', 9))
                 sock.close()
 
             elif action == "longpress":
