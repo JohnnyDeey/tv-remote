@@ -504,6 +504,20 @@
 <!-- REMOTE UI -->
 <div class="status-bar">
   <h1 id="app-title">📺 TV Remote</h1>
+  <div style="display:flex;align-items:center;gap:6px;margin-left:8px;">
+    <div style="display:flex;align-items:center;gap:3px;">
+      <div id="dot-tv" style="width:8px;height:8px;border-radius:50%;background:#ef5350;transition:background 0.5s;"></div>
+      <span style="font-size:10px;color:#888;">TV</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:3px;">
+      <div id="dot-digi" style="width:8px;height:8px;border-radius:50%;background:#ef5350;transition:background 0.5s;"></div>
+      <span style="font-size:10px;color:#888;">DIGI</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:3px;">
+      <div id="dot-bridge" style="width:8px;height:8px;border-radius:50%;background:#ef5350;transition:background 0.5s;"></div>
+      <span style="font-size:10px;color:#888;">Bridge</span>
+    </div>
+  </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <div class="status-dot" id="tv-status-dot" style="display:flex;"></div>
         <div id="tv-status-dot" style="display:flex;"></div>
@@ -1000,6 +1014,34 @@
   }
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // ─── SILENT STATUS DOTS ───────────────────────────────────
+  function updateDot(id, color) {
+    const dot = document.getElementById(id);
+    if (dot) dot.style.background = color;
+  }
+
+  async function pingTVDot() {
+    try {
+      await fetch(`http://${TV_IP}:8001/api/v2/`, { signal: AbortSignal.timeout(2000) });
+      updateDot('dot-tv', '#66bb6a'); // green
+    } catch(e) {
+      updateDot('dot-tv', '#ef5350'); // red
+    }
+  }
+
+  function pingDigiDot() {
+    if (digiWs && digiWs.readyState === WebSocket.OPEN) {
+      updateDot('dot-digi', '#66bb6a'); // green
+      updateDot('dot-bridge', '#4fc3f7'); // blue
+    } else {
+      updateDot('dot-digi', '#ef5350'); // red
+      updateDot('dot-bridge', '#ef5350'); // red
+    }
+  }
+
+  setInterval(pingTVDot, 3000);
+  setInterval(pingDigiDot, 1000);
 
   async function checkAndUpdate() {
     try {
