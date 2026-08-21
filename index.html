@@ -1054,6 +1054,10 @@
   }
 
   async function pingTVDot() {
+    if (connected) {
+      updateDot('dot-tv', '#66bb6a'); // green - WS connected
+      return;
+    }
     try {
       await fetch(`http://${TV_IP}:8001/api/v2/`, { signal: AbortSignal.timeout(2000) });
       updateDot('dot-tv', '#66bb6a'); // green
