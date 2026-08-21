@@ -988,6 +988,61 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+  function showSetupWizard() {
+    const wizard = document.createElement('div');
+    wizard.id = 'setup-wizard';
+    wizard.style.cssText = 'position:fixed;inset:0;background:#0a0a0a;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;';
+    const slides = [
+      { icon: '📺', title: 'Welcome to TV Remote', desc: 'Control your Samsung TV and DIGI decoder from your phone. Let\'s set it up in 2 steps.', input: null, hint: null },
+      { icon: '📡', title: 'Samsung TV IP Address', desc: 'Find your TV IP address:', hint: 'On TV: Settings → General → Network → Network Status → IP Address', input: { id: 'wizard-tv-ip', placeholder: '192.168.68.106', label: 'TV IP Address' } },
+      { icon: '🎮', title: 'DIGI Decoder IP Address', desc: 'Find your decoder IP address:', hint: 'On Decoder: Settings → Network → IP Address', input: { id: 'wizard-bridge-ip', placeholder: '192.168.68.107', label: 'Decoder IP Address' } },
+      { icon: '✅', title: 'All Set!', desc: 'Your remote is ready. If buttons stop working after a power cut, update the IPs in Settings (⚙).', input: null, hint: null }
+    ];
+    let current = 0;
+    function renderSlide() {
+      const s = slides[current];
+      wizard.innerHTML = `
+        <div style="width:100%;max-width:340px;display:flex;flex-direction:column;gap:20px;">
+          <div style="text-align:center;font-size:56px;">${s.icon}</div>
+          <div style="text-align:center;color:#f0f0f0;font-size:20px;font-weight:700;">${s.title}</div>
+          <div style="text-align:center;color:#888;font-size:14px;">${s.desc}</div>
+          ${s.hint ? `<div style="background:#1e1e1e;border:1px solid #333;border-radius:10px;padding:12px;color:#4fc3f7;font-size:12px;">💡 ${s.hint}</div>` : ''}
+          ${s.input ? `<div style="display:flex;flex-direction:column;gap:8px;"><label style="color:#888;font-size:12px;">${s.input.label}</label><input id="${s.input.id}" type="text" placeholder="${s.input.placeholder}" inputmode="decimal" style="background:#1e1e1e;border:1px solid #4fc3f7;border-radius:8px;padding:12px;color:#f0f0f0;font-size:16px;outline:none;text-align:center;"></div>` : ''}
+          <div style="display:flex;gap:10px;margin-top:10px;">
+            ${current > 0 ? `<button onclick="wizardPrev()" style="flex:1;padding:14px;background:#2a2a2a;border:1px solid #333;border-radius:10px;color:#888;font-size:14px;cursor:pointer;">← Back</button>` : ''}
+            <button onclick="wizardNext()" style="flex:2;padding:14px;background:#4fc3f7;border:none;border-radius:10px;color:#000;font-size:15px;font-weight:700;cursor:pointer;">${current === slides.length - 1 ? 'Start Using App →' : 'Next →'}</button>
+          </div>
+          <div style="display:flex;justify-content:center;gap:6px;">${slides.map((_, i) => `<div style="width:8px;height:8px;border-radius:50%;background:${i===current?'#4fc3f7':'#333'};"></div>`).join('')}</div>
+        </div>`;
+    }
+    window.wizardNext = function() {
+      if (current === 1) {
+        const ip = document.getElementById('wizard-tv-ip')?.value.trim();
+        if (!ip) { showToast('Enter TV IP address'); return; }
+        TV_IP = ip;
+        localStorage.setItem('tv_ip', ip);
+        document.getElementById('ip-input').value = ip;
+      }
+      if (current === 2) {
+        const ip = document.getElementById('wizard-bridge-ip')?.value.trim();
+        if (!ip) { showToast('Enter Decoder IP address'); return; }
+        localStorage.setItem('bridge_ip', ip);
+      }
+      if (current === slides.length - 1) {
+        document.getElementById('setup-wizard').remove();
+        document.getElementById('overlay').style.display = 'none';
+        connect();
+        connectDigi();
+        return;
+      }
+      current++;
+      renderSlide();
+    };
+    window.wizardPrev = function() { current--; renderSlide(); };
+    renderSlide();
+    document.body.appendChild(wizard);
+  }
+
   
   // ─── APP LAUNCHER ─────────────────────────────────────────
   const APP_NAMES = {
@@ -1845,16 +1900,19 @@
 
   // ─── INIT ─────────────────────────────────────────────────
   window.onload = () => {
-    const savedIp = localStorage.getItem('tv_ip');
-    if (savedIp) {
-      TV_IP = savedIp;
-      document.getElementById('ip-input').value = savedIp;
+    const savedTvIp = localStorage.getItem('tv_ip');
+    const savedBridgeIp = localStorage.getItem('bridge_ip');
+
+    if (!savedTvIp || !savedBridgeIp) {
+      showSetupWizard();
+    } else {
+      TV_IP = savedTvIp;
+      document.getElementById('ip-input').value = savedTvIp;
       document.getElementById('overlay').style.display = 'none';
       if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
         connect();
       }
-    } else {
-      document.getElementById('overlay').style.display = 'flex';
+      connectDigi();
     }
     updateCertLink();
     switchDevice(currentDevice);
