@@ -478,6 +478,7 @@
       <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px;">CONNECTION</div>
 
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">TV IP: <span id="settings-ip" style="color:var(--accent);"></span></div>
+      <div style="font-size:11px;color:#555;margin-bottom:8px;">App Version: <span id="app-version-display" style="color:#4fc3f7;"></span></div>
       <div style="display:flex;gap:8px;margin-bottom:8px;">
         <input id="tv-ip-input" type="text" placeholder="192.168.68.x" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
         <button onclick="updateTvIp()" style="background:var(--accent-dim);border:1px solid var(--accent);border-radius:8px;color:var(--accent);font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer;">Save</button>
@@ -1707,6 +1708,8 @@
 
   function showSettings() {
     document.getElementById('settings-ip').textContent = TV_IP || '(not set)';
+    const verEl = document.getElementById('app-version-display');
+    if (verEl) verEl.textContent = typeof CURRENT_VERSION !== 'undefined' ? CURRENT_VERSION : 'PWA';
     document.getElementById('tv-ip-input').value = TV_IP;
     updateCertLink();
     const savedIp = localStorage.getItem('bridge_ip') || '';
