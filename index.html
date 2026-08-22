@@ -1137,11 +1137,19 @@
 
   function openMousePanel() {
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-      const { AppLauncher } = Capacitor.Plugins;
-      console.log('AppLauncher:', AppLauncher);
+      const { AppLauncher, FloatingButton } = Capacitor.Plugins;
+      // Start floating exit button service
+      if (FloatingButton) FloatingButton.show();
+      // Launch ADB Mouse app
       AppLauncher.openUrl({ url: 'package:svarzee.android.apps.adb_mouse' })
-        .then(r => { console.log('openUrl result:', JSON.stringify(r)); showToast('Launching...'); })
-        .catch(e => { console.log('AppLauncher error:', JSON.stringify(e)); showToast('Error: ' + JSON.stringify(e)); });
+        .then(r => {
+          if (!r.completed) {
+            // Not installed - open Play Store
+            AppLauncher.openUrl({ url: 'https://play.google.com/store/apps/details?id=svarzee.android.apps.adb_mouse' });
+            showToast('Installing ADB Mouse app...');
+          }
+        })
+        .catch(e => showToast('Error: ' + e.message));
     } else {
       showToast('Mouse available in APK only');
     }
