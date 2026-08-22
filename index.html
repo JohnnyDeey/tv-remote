@@ -1138,11 +1138,10 @@
   function openMousePanel() {
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
       const { AppLauncher } = Capacitor.Plugins;
+      console.log('AppLauncher:', AppLauncher);
       AppLauncher.openUrl({ url: 'package:svarzee.android.apps.adb_mouse' })
-        .catch(e => {
-          console.log('AppLauncher error:', e);
-          showToast('ADB Mouse app not installed');
-        });
+        .then(r => { console.log('openUrl result:', JSON.stringify(r)); showToast('Launching...'); })
+        .catch(e => { console.log('AppLauncher error:', JSON.stringify(e)); showToast('Error: ' + JSON.stringify(e)); });
     } else {
       showToast('Mouse available in APK only');
     }
