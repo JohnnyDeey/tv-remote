@@ -1135,6 +1135,14 @@
 
   // ─── MOUSE PANEL ──────────────────────────────────────────
 
+  // Hide floating button when remote app resumes (back gesture from ADB Mouse)
+  document.addEventListener('resume', () => {
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+      const { FloatingButton } = Capacitor.Plugins;
+      if (FloatingButton) FloatingButton.hide();
+    }
+  });
+
   function openMousePanel() {
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
       const { FloatingButton } = Capacitor.Plugins;
