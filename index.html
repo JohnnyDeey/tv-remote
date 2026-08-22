@@ -542,12 +542,18 @@
   <!-- TOP ROW: POWER / SOURCE / SETTINGS -->
   <div class="section">
     <div class="top-row">
-      <button class="btn power" onclick="tvPower()">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2.5" stroke-linecap="round">
-          <path d="M12 3v9"/>
-          <path d="M6.3 5.3a9 9 0 1 0 11.4 0"/>
-        </svg>
-      </button>
+      <div style="display:flex;gap:4px;">
+        <button class="btn" onclick="tvOn()" style="padding:8px;min-width:0;flex:1;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#66bb6a" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 3v9"/><path d="M6.3 5.3a9 9 0 1 0 11.4 0"/>
+          </svg>
+        </button>
+        <button class="btn power" onclick="tvOff()" style="padding:8px;min-width:0;flex:1;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 3v9"/><path d="M6.3 5.3a9 9 0 1 0 11.4 0"/>
+          </svg>
+        </button>
+      </div>
       <button class="btn accent-btn" onclick="sendKey('KEY_SOURCE')">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
           <rect x="2" y="7" width="20" height="15" rx="2"/>
@@ -748,12 +754,18 @@
   <!-- TOP ROW -->
   <div class="section">
     <div class="top-row">
-      <button class="btn power" onclick="digiKey('power')">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2.5" stroke-linecap="round">
-          <path d="M12 3v9"/>
-          <path d="M6.3 5.3a9 9 0 1 0 11.4 0"/>
-        </svg>
-      </button>
+      <div style="display:flex;gap:4px;">
+        <button class="btn" onclick="digiOn()" style="padding:8px;flex:1;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#66bb6a" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 3v9"/><path d="M6.3 5.3a9 9 0 1 0 11.4 0"/>
+          </svg>
+        </button>
+        <button class="btn power" onclick="digiOff()" style="padding:8px;flex:1;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2.5" stroke-linecap="round">
+            <path d="M12 3v9"/><path d="M6.3 5.3a9 9 0 1 0 11.4 0"/>
+          </svg>
+        </button>
+      </div>
       <button class="btn accent-btn" onclick="digiKey('home')">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
           <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
@@ -1109,14 +1121,7 @@
 
   async function pingTVDot() {
     if (connected) {
-      updateDot('dot-tv', '#66bb6a'); // green - WS connected
-      return;
-    }
-    try {
-      await fetch(`http://${TV_IP}:8001/api/v2/`, { signal: AbortSignal.timeout(2000) });
-      updateDot('dot-tv', '#66bb6a'); // green
-    } catch(e) {
-      updateDot('dot-tv', '#ef5350'); // red
+      updateDot('dot-tv', '#66bb6a');
     }
   }
 
@@ -1460,50 +1465,51 @@
     }
   });
 
-  async function tvPower() {
-    // Ping TV first to get real status
-    let tvReachable = false;
-    try {
-      await fetch(`http://${TV_IP}:8001/api/v2/`, { signal: AbortSignal.timeout(1500) });
-      tvReachable = true;
-    } catch(e) {}
-
-    if (tvReachable && connected) {
-      // TV is on and WS connected — turn off
-      sendKey('KEY_POWER');
-      setTimeout(() => {
-        manualDisconnect = true;
-        if (ws) { try { ws.close(); } catch(e){} ws = null; }
-        connected = false;
-      }, 1000);
-    } else if (tvReachable && !connected) {
-      // TV reachable but WS dropped — reconnect first then toggle
-      manualDisconnect = false;
-      connect();
-      setTimeout(() => {
-        if (connected) sendKey('KEY_POWER');
-      }, 3000);
-    } else {
-      // TV not reachable — deep standby — send WoL
-      if (digiWs && digiWs.readyState === WebSocket.OPEN) {
-        digiWs.send(JSON.stringify({ action: 'wol' }));
-        manualDisconnect = false;
-        setTimeout(() => connect(), 4000);
-        setTimeout(() => connect(), 8000);
-        setTimeout(() => connect(), 13000);
-      } else {
-        showToast('⚠️ Connect decoder first to wake TV');
-      }
-    }
+function tvOff() {
+    if (!connected) return;
+    sendKey('KEY_POWER');
+    manualDisconnect = true;
+    setTimeout(() => {
+      if (ws) { try { ws.close(); } catch(e){} ws = null; }
+      connected = false;
+      tvState = 'standby';
+    }, 1500);
   }
 
+  function tvOn() {
+    if (connected) return;
+    manualDisconnect = false;
+    if (window._tvOnInterval) clearInterval(window._tvOnInterval);
+    if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
+      connecting = false;
+      connect();
+    }
+    let attempts = 0;
+    window._tvOnInterval = setInterval(() => {
+      attempts++;
+      if (connected) {
+        clearInterval(window._tvOnInterval);
+        sendKey('KEY_POWER');
 
+      } else if (attempts > 20) {
+        clearInterval(window._tvOnInterval);
 
-  
+      }
+    }, 500);
+  }
 
-
-  
-
+  function tvPower() { if (connected) tvOff(); else tvOn(); }
+  let _digiPowerState = 'unknown';
+  function digiOff() {
+    if (_digiPowerState === 'off') return;
+    _digiPowerState = 'off';
+    digiKey('power');
+  }
+  function digiOn() {
+    if (_digiPowerState === 'on') return;
+    _digiPowerState = 'on';
+    digiKey('power');
+  }
   let isPlaying = false;
   function togglePlayPause() {
     isPlaying = !isPlaying;
@@ -1571,8 +1577,14 @@
     digiWs.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
-        if (data.reachable !== undefined && !connected) {
-          updateWifiIcon('tv-status-dot', data.reachable ? 'standby' : 'disconnected');
+        if (data.type === 'tv_ping') {
+          if (data.power === 'on') {
+            updateDot('dot-tv', '#66bb6a'); // green - TV ON
+          } else if (data.reachable) {
+            updateDot('dot-tv', '#f9a825'); // yellow - standby
+          } else {
+            updateDot('dot-tv', '#ef5350'); // red - unreachable
+          }
         }
         if (data.status === 'error') {
           showToast('DIGI error: ' + (data.msg || 'unknown'));
@@ -2290,3 +2302,4 @@
 </script>
 </body>
 </html>
+

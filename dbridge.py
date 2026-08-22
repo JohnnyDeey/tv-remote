@@ -23,13 +23,13 @@ async def handler(websocket):
 
             elif action == "ping_tv":
                 import subprocess as sp
-                result = sp.run(["ping", "-c", "1", "-W", "1", "192.168.68.106"], capture_output=True)
+                result = sp.run(["ping", "-c", "1", "-W", "1", "192.168.68.109"], capture_output=True)
                 reachable = result.returncode == 0
                 await websocket.send(json.dumps({"status": "ok", "reachable": reachable}))
                 continue
-            
+
             elif action == "hide_keyboard":
-                subprocess.run(ADB + ["shell", "input", "keyevent", "111"])
+                subprocess.run(ADB + ["input", "keyevent", "111"])
                 await websocket.send(json.dumps({"status": "ok"}))
                 continue
 
@@ -38,8 +38,8 @@ async def handler(websocket):
                     ADB + ["cmd", "package", "list", "packages", "-3"],
                     capture_output=True, text=True
                 )
-                packages = [line.replace("package:", "").strip() 
-                        for line in result.stdout.strip().split("\n") 
+                packages = [line.replace("package:", "").strip()
+                        for line in result.stdout.strip().split("\n")
                         if line.startswith("package:")]
                 await websocket.send(json.dumps({"status": "ok", "apps": packages}))
                 continue
@@ -49,25 +49,23 @@ async def handler(websocket):
                 subprocess.run(ADB + ["monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1"])
 
             elif action == "save_app_meta":
-                import json as json_mod
                 pkg = data.get("package", "")
                 name = data.get("name", "")
                 color = data.get("color", "")
                 try:
                     with open("/sdcard/app_meta.json", "r") as f:
-                        meta = json_mod.load(f)
+                        meta = json.load(f)
                 except:
                     meta = {}
                 if pkg:
                     meta[pkg] = {"name": name, "color": color}
                 with open("/sdcard/app_meta.json", "w") as f:
-                    json_mod.dump(meta, f)
+                    json.dump(meta, f)
 
             elif action == "get_app_meta":
-                import json as json_mod
                 try:
                     with open("/sdcard/app_meta.json", "r") as f:
-                        meta = json_mod.load(f)
+                        meta = json.load(f)
                 except:
                     meta = {}
                 await websocket.send(json.dumps({"status": "ok", "meta": meta}))
@@ -88,13 +86,14 @@ async def handler(websocket):
             elif action == "longpress":
                 keycode = data.get("keycode", 0)
                 subprocess.run(ADB + ["input", "keyevent", "--longpress", str(keycode)])
-            elif action == "hide_keyboard":
-                subprocess.run(ADB + ["input", "keyevent", "111"])
 
             await websocket.send(json.dumps({"status": "ok"}))
 
         except Exception as e:
-            await websocket.send(json.dumps({"status": "error", "msg": str(e)}))
+            try:
+                await websocket.send(json.dumps({"status": "error", "msg": str(e)}))
+            except:
+                pass
 
 async def main():
     async with websockets.serve(handler, "0.0.0.0", PORT):
