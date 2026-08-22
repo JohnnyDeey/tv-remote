@@ -1137,16 +1137,14 @@
 
   function openMousePanel() {
     if (window.Capacitor && window.Capacitor.isNativePlatform()) {
-      const { AppLauncher, FloatingButton } = Capacitor.Plugins;
-      // Check if ADB Mouse is installed
-      AppLauncher.canOpenUrl({ url: 'svarzee.android.apps.adb_mouse' })
-        .then(({ value }) => {
-          if (value) {
-            // App installed — show floating button then launch
-            if (FloatingButton) FloatingButton.show();
-            AppLauncher.openUrl({ url: 'package:svarzee.android.apps.adb_mouse' });
+      const { FloatingButton } = Capacitor.Plugins;
+      // Silently check if ADB Mouse is installed using PackageManager
+      FloatingButton.isAppInstalled({ package: 'svarzee.android.apps.adb_mouse' })
+        .then(({ installed }) => {
+          if (installed) {
+            FloatingButton.show();
+            FloatingButton.launch({ package: 'svarzee.android.apps.adb_mouse' });
           } else {
-            // Not installed — show install dialog
             showMouseInstallDialog();
           }
         })
