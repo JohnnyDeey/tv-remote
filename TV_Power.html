@@ -1,493 +1,195 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TV Power Toggle Test with SSL & Stopwatch</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TV Power</title>
   <style>
-    body { background:#111; color:#fff; font-family:monospace; padding:20px; margin:0; }
-    button { padding:10px 18px; margin:4px; border:none; border-radius:8px; cursor:pointer; font-size:13px; font-weight:bold; transition: opacity 0.2s; }
-    button:hover { opacity: 0.9; }
-    #log { background:#000; padding:16px; border-radius:8px; height:280px; overflow-y:auto; font-size:12px; margin-top:16px; border:1px solid #333; }
-    .ok { color:#66bb6a; }
-    .err { color:#ef5350; }
-    .info { color:#4fc3f7; }
-    .warn { color:#ffa726; }
-    input { background:#222; border:1px solid #444; color:#fff; padding:8px; border-radius:6px; width:150px; margin:4px; }
-    label { font-size:12px; color:#aaa; display:inline-block; margin-bottom:4px; }
-    .row { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; align-items:center; }
-    
-    /* STOPWATCH */
-    #stopwatch-box { background:#1a1a1a; border:1px solid #333; padding:12px 18px; border-radius:10px; margin:16px 0; display:inline-flex; align-items:center; gap:20px; box-shadow:0 4px 12px rgba(0,0,0,0.4); }
-    #stopwatch-display { font-size:22px; font-weight:bold; color:#ffeb3b; min-width:95px; letter-spacing:1px; }
-
-    /* POWER TOGGLE SWITCH */
-    .toggle-wrapper {
-      display:flex; flex-direction:column; align-items:center;
-      margin:24px 0;
-    }
-    .toggle-label {
-      font-size:13px; color:#888; margin-bottom:10px; letter-spacing:1px; font-weight:bold;
-    }
-    .toggle-track {
-      width:130px; height:60px; border-radius:30px;
-      background:#333; border:3px solid #444;
-      position:relative; cursor:pointer;
-      transition:background 0.4s, border-color 0.4s;
-      box-shadow:0 4px 20px rgba(0,0,0,0.6);
-    }
-    .toggle-track.on {
-      background:#1b5e20;
-      border-color:#4caf50;
-      box-shadow:0 0 25px rgba(76,175,80,0.4);
-    }
-    .toggle-track.busy {
-      background:#1a237e;
-      border-color:#3f51b5;
-      box-shadow:0 0 25px rgba(63,81,181,0.4);
-    }
-    .toggle-knob {
-      width:48px; height:48px; border-radius:50%;
-      background:#666; position:absolute;
-      top:3px; left:4px;
-      transition:left 0.4s, background 0.4s, transform 0.4s;
-      display:flex; align-items:center; justify-content:center;
-      font-size:20px;
-      box-shadow:0 2px 8px rgba(0,0,0,0.5);
-    }
-    .toggle-track.on .toggle-knob {
-      left:73px;
-      background:#4caf50;
-    }
-    .toggle-track.busy .toggle-knob {
-      left:41px;
-      background:#3f51b5;
-    }
-    .toggle-status {
-      margin-top:10px; font-size:14px; font-weight:bold;
-      letter-spacing:1px; min-height:20px;
-    }
-    .toggle-status.on { color:#4caf50; }
-    .toggle-status.off { color:#ef5350; }
-    .toggle-status.busy { color:#3f51b5; }
-    .ssl-banner { background:#2d1b36; border:1px solid #7b1fa2; padding:10px 14px; border-radius:8px; margin-bottom:14px; font-size:12px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; }
+    body { background:#111; color:#fff; font-family:monospace; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; padding:20px; box-sizing:border-box; }
+    .status { font-size:18px; font-weight:bold; margin:20px 0; padding:12px 24px; border-radius:8px; }
+    .on { background:#1b5e20; color:#66bb6a; }
+    .off { background:#b71c1c; color:#ef5350; }
+    .busy { background:#1a237e; color:#90caf9; }
+    .buttons { display:flex; gap:16px; margin:20px 0; }
+    button { padding:20px 40px; border:none; border-radius:12px; font-size:18px; cursor:pointer; font-weight:bold; }
+    .btn-on { background:#66bb6a; color:#000; }
+    .btn-off { background:#ef5350; color:#fff; }
+    #log { background:#000; padding:16px; border-radius:8px; width:100%; max-width:500px; height:250px; overflow-y:auto; font-size:11px; margin-top:16px; }
+    .ok { color:#66bb6a; } .err { color:#ef5350; } .info { color:#4fc3f7; }
+    input { background:#222; border:1px solid #444; color:#fff; padding:8px; border-radius:6px; width:160px; margin:4px; font-size:13px; }
+    label { font-size:12px; color:#aaa; }
+    .row { display:flex; flex-wrap:wrap; gap:8px; margin:8px 0; justify-content:center; }
   </style>
 </head>
 <body>
-  <h2>🔌 TV Power Toggle Test (Intelligent Background State Handling)</h2>
-
-  <div class="ssl-banner">
-    <div>⚠️ <b>SSL Note:</b> Samsung TVs use self-signed certificates on port 8002. If WebSocket handshakes fail, trust the certificate once.</div>
-    <button onclick="openCertTab()" style="background:#ab47bc;color:#fff;">🌐 Trust SSL Certificate</button>
-  </div>
+  <h2>📺 TV Power Test</h2>
 
   <div class="row">
-    <div>
-      <label>TV IP</label><br>
-      <input id="tvIp" value="192.168.68.109" onchange="saveSettings()">
-    </div>
-    <div>
-      <label>TV MAC</label><br>
-      <input id="tvMac" value="74:24:CA:D7:C6:03" onchange="saveSettings()">
-    </div>
-    <div>
-      <label>Token</label><br>
-      <input id="tvToken" value="27761039" onchange="saveSettings()">
-    </div>
-    <div>
-      <label>Bridge IP</label><br>
-      <input id="bridgeIp" value="192.168.68.107" onchange="saveSettings()">
-    </div>
+    <label>TV IP<br><input id="tvIp" value="192.168.68.109"></label>
+    <label>Token<br><input id="tvToken" value="27761039"></label>
+    <label>Bridge IP<br><input id="bridgeIp" value="192.168.68.107"></label>
   </div>
 
-  <!-- STOPWATCH WIDGET -->
-  <div id="stopwatch-box">
-    <div>
-      <span style="font-size:11px;color:#888;display:block;">WAKE TIMER</span>
-      <span id="stopwatch-display">00:00.0</span>
-    </div>
-    <div>
-      <button onclick="startStopwatch()" style="background:#4caf50;color:#fff;">Start</button>
-      <button onclick="stopStopwatch()" style="background:#ff9800;color:#fff;">Stop</button>
-      <button onclick="resetStopwatch()" style="background:#607d8b;color:#fff;">Reset</button>
-    </div>
+  <div id="status" class="status off">● TV: UNKNOWN</div>
+
+  <div class="buttons">
+    <button class="btn-on" onclick="tvOn()">⚡ ON</button>
+    <button class="btn-off" onclick="tvOff()">⏻ OFF</button>
   </div>
 
-  <!-- POWER TOGGLE -->
-  <div class="toggle-wrapper">
-    <div class="toggle-label">TV POWER TOGGLE</div>
-    <div class="toggle-track" id="powerToggle" onclick="smartPowerToggle()">
-      <div class="toggle-knob" id="powerKnob">⏻</div>
-    </div>
-    <div class="toggle-status off" id="powerStatus">OFF</div>
-  </div>
-
-  <div class="row">
-    <button onclick="connectBridge()" style="background:#ff9800;color:#000;">Connect Bridge</button>
-    <button onclick="sendWolManual()" style="background:#26a69a;color:#000;">Send WoL Packet</button>
-    <button onclick="checkStatusManual()" style="background:#9c27b0;color:#fff;">Check TV API</button>
-    <button onclick="copyLog()" style="background:#1e88e5;color:#fff;">📋 Copy Log</button>
-    <button onclick="clearLog()" style="background:#333;color:#fff;">Clear Log</button>
-  </div>
+  <button onclick="copyLog()" style="background:#1e88e5;color:#fff;padding:10px 20px;border:none;border-radius:8px;cursor:pointer;">📋 Copy Log</button>
 
   <div id="log"></div>
 
   <script>
     let ws = null;
     let digiWs = null;
-    let powerBusy = false;
-    let tvIsOn = false;
+    let connected = false;
+    let busy = false;
     const APP_NAME = btoa('TVRemote-FVWHO');
 
-    // Stopwatch variables
-    let swStartTime = 0;
-    let swElapsedTime = 0;
-    let swInterval = null;
-    let swRunning = false;
-
-    function updateStopwatchDisplay() {
-      const totalMs = swElapsedTime + (swRunning ? Date.now() - swStartTime : 0);
-      const mins = Math.floor(totalMs / 60000);
-      const secs = Math.floor((totalMs % 60000) / 1000);
-      const tenths = Math.floor((totalMs % 1000) / 100);
-      document.getElementById('stopwatch-display').innerText = 
-        String(mins).padStart(2, '0') + ':' + 
-        String(secs).padStart(2, '0') + '.' + 
-        tenths;
-    }
-
-    function startStopwatch() {
-      if (swRunning) return;
-      swStartTime = Date.now();
-      swRunning = true;
-      swInterval = setInterval(updateStopwatchDisplay, 100);
-    }
-
-    function stopStopwatch() {
-      if (!swRunning) return;
-      swElapsedTime += Date.now() - swStartTime;
-      swRunning = false;
-      clearInterval(swInterval);
-    }
-
-    function resetStopwatch() {
-      stopStopwatch();
-      swElapsedTime = 0;
-      updateStopwatchDisplay();
-    }
-
-    // ── UI STATE ──────────────────────────────────────
-    function setToggleState(state) {
-      const track = document.getElementById('powerToggle');
-      const knob = document.getElementById('powerKnob');
-      const status = document.getElementById('powerStatus');
-      track.className = 'toggle-track ' + state;
-      status.className = 'toggle-status ' + state;
-      if (state === 'on') {
-        knob.textContent = '⏻';
-        status.textContent = 'ON';
-        tvIsOn = true;
-      } else if (state === 'off') {
-        knob.textContent = '⏻';
-        status.textContent = 'OFF';
-        tvIsOn = false;
-      } else if (state === 'busy') {
-        knob.textContent = '↻';
-        status.textContent = 'BUSY...';
-      }
-    }
-
-    // ── LOGGING ──────────────────────────────────────
-    function log(msg, type='info') {
-      const div = document.getElementById('log');
-      const time = new Date().toLocaleTimeString();
-      div.innerHTML += `<div class="${type}">[${time}] ${msg}</div>`;
-      div.scrollTop = div.scrollHeight;
-    }
-    function clearLog() { document.getElementById('log').innerHTML = ''; }
-    function copyLog() {
-      navigator.clipboard.writeText(document.getElementById('log').innerText)
-        .then(() => log('📋 Copied log to clipboard!', 'ok'))
-        .catch(() => log('❌ Clipboard access blocked', 'err'));
-    }
-
     function getTV() { return document.getElementById('tvIp').value.trim(); }
-    function getMac() { return document.getElementById('tvMac').value.trim(); }
     function getToken() { return document.getElementById('tvToken').value.trim(); }
     function getBridge() { return document.getElementById('bridgeIp').value.trim(); }
 
-    function saveSettings() {
-      localStorage.setItem('tv_ip', getTV());
-      localStorage.setItem('tv_mac', getMac());
-      localStorage.setItem('tv_token', getToken());
-      localStorage.setItem('bridge_ip', getBridge());
+    function log(msg, type='info') {
+      const div = document.getElementById('log');
+      div.innerHTML += `<div class="${type}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+      div.scrollTop = div.scrollHeight;
+    }
+    function copyLog() {
+      navigator.clipboard.writeText(document.getElementById('log').innerText).then(() => log('Copied!', 'ok'));
+    }
+    function setStatus(text, cls) {
+      const el = document.getElementById('status');
+      el.textContent = text;
+      el.className = 'status ' + cls;
     }
 
-    function loadSettings() {
-      if(localStorage.getItem('tv_ip')) document.getElementById('tvIp').value = localStorage.getItem('tv_ip');
-      if(localStorage.getItem('tv_mac')) document.getElementById('tvMac').value = localStorage.getItem('tv_mac');
-      if(localStorage.getItem('tv_token')) document.getElementById('tvToken').value = localStorage.getItem('tv_token');
-      if(localStorage.getItem('bridge_ip')) document.getElementById('bridgeIp').value = localStorage.getItem('bridge_ip');
+    // ── BRIDGE ──────────────────────────────────────
+    function connectBridge() {
+      if (digiWs && digiWs.readyState === WebSocket.OPEN) return;
+      digiWs = new WebSocket(`ws://${getBridge()}:8765`);
+      digiWs.onopen = () => log('Bridge connected', 'ok');
+      digiWs.onmessage = (e) => log(`Bridge: ${e.data}`, 'info');
+      digiWs.onerror = () => log('Bridge error', 'err');
+      digiWs.onclose = () => { log('Bridge closed', 'err'); setTimeout(connectBridge, 3000); }
     }
 
-    function openCertTab() {
-      const url = `https://${getTV()}:8002/api/v2/`;
-      log(`🌐 Opening SSL endpoint in new tab: ${url}`, 'info');
-      window.open(url, '_blank');
-    }
-
-    // ── TV HTTP STATUS ────────────────────────────────
-    async function checkStatus() {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 2000);
-        const r = await fetch(`http://${getTV()}:8001/api/v2/`, { signal: controller.signal });
-        clearTimeout(timeoutId);
-        const d = await r.json();
-        return true;
-      } catch(e) {
-        return false;
+    function sendWol() {
+      if (digiWs && digiWs.readyState === WebSocket.OPEN) {
+        digiWs.send(JSON.stringify({ action: 'wol' }));
+        log('WoL sent via bridge', 'ok');
       }
     }
 
-    async function checkStatusManual() {
-      log('Checking TV HTTP API (Port 8001)...', 'info');
-      const up = await checkStatus();
-      if (up) {
-        log('✅ TV API is active and responding!', 'ok');
-      } else {
-        log('❌ TV HTTP API unreachable (TV is in Deep Sleep / IP powered down)', 'warn');
-      }
-    }
-
-    // ── WEBSOCKET ─────────────────────────────────────
-    function connectTV() {
+    // ── WEBSOCKET ───────────────────────────────────
+    function connectWS() {
       return new Promise((resolve, reject) => {
-        if (ws && ws.readyState === WebSocket.OPEN) { resolve(true); return; }
         if (ws) { try { ws.close(); } catch(e){} ws = null; }
-        
         const token = getToken();
         const url = token
           ? `wss://${getTV()}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}&token=${token}`
           : `wss://${getTV()}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}`;
         
+        log(`Connecting WSS...`);
         ws = new WebSocket(url);
         
         const timeout = setTimeout(() => {
-          if (ws && ws.readyState !== WebSocket.OPEN) {
-            ws.close();
-            reject(new Error('Handshake timeout'));
-          }
-        }, 5000);
+          if (ws) { try { ws.close(); } catch(e){} ws = null; }
+          reject(new Error('timeout'));
+        }, 8000);
 
-        ws.onopen = () => {
-          clearTimeout(timeout);
-        };
-
+        ws.onopen = () => log('WSS open', 'info');
         ws.onmessage = (e) => {
           try {
             const msg = JSON.parse(e.data);
             if (msg.event === 'ms.channel.connect') {
+              clearTimeout(timeout);
+              connected = true;
               if (msg.data?.token) {
                 document.getElementById('tvToken').value = msg.data.token;
-                saveSettings();
-                log(`🔑 New token acquired and saved: ${msg.data.token}`, 'ok');
+                log(`Token updated: ${msg.data.token}`, 'ok');
               }
+              setStatus('● TV: ON', 'on');
               resolve(true);
             }
             if (msg.event === 'ms.channel.unauthorized') {
-              reject(new Error('Unauthorized token'));
+              log('⚠ Unauthorized - check TV', 'err');
             }
           } catch(err) {}
         };
-
-        ws.onerror = () => {
+        ws.onerror = () => { clearTimeout(timeout); reject(new Error('ws error')); };
+        ws.onclose = () => {
           clearTimeout(timeout);
-          reject(new Error('WS Error or Untrusted SSL'));
-        };
-
-        ws.onclose = (e) => {
-          if (e.code !== 1000 && !powerBusy) {
-            setToggleState('off');
-            tvIsOn = false;
-          }
+          connected = false;
+          if (!busy) setStatus('● TV: OFF/STANDBY', 'off');
         };
       });
     }
 
-    function sendPower() {
+    function sendKey(key) {
       if (!ws || ws.readyState !== WebSocket.OPEN) return false;
       ws.send(JSON.stringify({
         method: 'ms.remote.control',
-        params: { Cmd: 'Click', DataOfCmd: 'KEY_POWER', Option: 'false', TypeOfRemote: 'SendRemoteKey' }
+        params: { Cmd: 'Click', DataOfCmd: key, Option: 'false', TypeOfRemote: 'SendRemoteKey' }
       }));
-      log('📤 KEY_POWER signal dispatched to TV', 'ok');
       return true;
     }
 
-    // ── BRIDGE ────────────────────────────────────────
-    function connectBridge() {
-      return new Promise((resolve) => {
-        if (digiWs && digiWs.readyState === WebSocket.OPEN) { resolve(true); return; }
-        const url = `ws://${getBridge()}:8765`;
-        digiWs = new WebSocket(url);
-        digiWs.onopen = () => { resolve(true); };
-        digiWs.onerror = () => { resolve(false); };
-        digiWs.onclose = () => {};
-      });
-    }
+    // ── TV ON ───────────────────────────────────────
+    async function tvOn() {
+      if (busy) { log('Busy - please wait', 'err'); return; }
+      if (connected) { log('TV already ON', 'info'); return; }
+      busy = true;
+      setStatus('● Waking TV...', 'busy');
+      log('=== TV ON ===');
 
-    async function sendWolManual() {
-      let bridgeConnected = await connectBridge();
-      if (!bridgeConnected || !digiWs || digiWs.readyState !== WebSocket.OPEN) {
-        log('⚠️ Bridge offline. Attempting quick reconnection to bridge...', 'warn');
-        await new Promise(r => setTimeout(r, 1000));
-        bridgeConnected = await connectBridge();
-      }
-      if (!digiWs || digiWs.readyState !== WebSocket.OPEN) {
-        log('❌ Cannot send WoL: Bridge utility unavailable.', 'err');
-        return;
-      }
-      const mac = getMac();
-      digiWs.send(JSON.stringify({ action: 'wol', mac: mac }));
-      log(`📡 WoL magic packet transmitted for MAC: ${mac}`, 'ok');
-    }
+      // Send WoL
+      sendWol();
 
-    // ── INTELLIGENT SMART POWER TOGGLE ────────────────
-    async function smartPowerToggle() {
-      if (powerBusy) return; // Ignore multiple rapid clicks while processing
-      powerBusy = true;
-
-      const targetState = !tvIsOn;
-      const previousState = tvIsOn ? 'on' : 'off';
-
-      setToggleState('busy');
-      log(`⚡ Input received: User requested power toggle to [${targetState ? 'ON' : 'OFF'}]. Processing intelligently...`, 'info');
-
-      if (targetState === false) {
-        // ── INTELLIGENT SHUTDOWN FLOW ──
-        log('--- Executing Power OFF Sequence ---', 'info');
-        startStopwatch();
-
-        let wsReady = ws && ws.readyState === WebSocket.OPEN;
-        if (!wsReady) {
-          try { await connectTV(); wsReady = ws && ws.readyState === WebSocket.OPEN; } catch(e) {}
-        }
-
-        if (wsReady) {
-          sendPower();
-        } else {
-          log('⚠️ Active WebSocket channel unavailable. Verifying via HTTP shutdown status check...', 'warn');
-        }
-
-        let confirmedOff = false;
-        for (let i = 0; i < 10; i++) {
-          await new Promise(r => setTimeout(r, 2000));
-          const alive = await checkStatus();
-          if (!alive) { confirmedOff = true; break; }
-        }
-
-        stopStopwatch();
-
-        if (confirmedOff) {
-          log('✅ System successfully powered OFF and verified!', 'ok');
-          setToggleState('off');
-          if (ws) { try { ws.close(); } catch(e){} ws = null; }
-        } else {
-          log('❌ Power OFF sequence timed out: System still responsive on network. Reverting toggle to previous state.', 'err');
-          setToggleState(previousState);
-        }
-
-      } else {
-        // ── INTELLIGENT WAKE & ON FLOW ──
-        log('--- Executing Smart Wake & Power ON Sequence ---', 'info');
-        resetStopwatch();
-        startStopwatch();
-
-        let bridgeOk = await connectBridge();
-        if (!bridgeOk) {
-          log('Utility check: Bridge unavailable. Retrying connection silently...', 'warn');
-          await new Promise(r => setTimeout(r, 1500));
-          bridgeOk = await connectBridge();
-        }
-
-        const mac = getMac();
-        if (bridgeOk && digiWs && digiWs.readyState === WebSocket.OPEN) {
-          digiWs.send(JSON.stringify({ action: 'wol', mac: mac }));
-          log(`📡 Initial WoL magic packet dispatched to ${mac}`, 'ok');
-        } else {
-          log('⚠️ Bridge utility unavailable. Proceeding with direct network API polling...', 'warn');
-        }
-
-        let apiUp = false;
-        for (let i = 0; i < 36; i++) {
-          await new Promise(r => setTimeout(r, 3000));
-          apiUp = await checkStatus();
-          if (apiUp) break;
-
-          if (i > 0 && i % 6 === 0 && digiWs && digiWs.readyState === WebSocket.OPEN) {
-            log('Background task: Resending WoL magic packet to assist boot...', 'info');
-            digiWs.send(JSON.stringify({ action: 'wol', mac: mac }));
-          }
-        }
-
-        if (!apiUp) {
-          stopStopwatch();
-          log('❌ Smart wake failed: TV network stack did not respond after multiple attempts. Reverting toggle to previous state.', 'err');
-          setToggleState(previousState);
-          powerBusy = false;
-          return;
-        }
-
-        log('🎉 System network stack online! Establishing secure communication channel...', 'info');
-
-        let connected = false;
-        for (let attempt = 1; attempt <= 4; attempt++) {
-          try {
-            await connectTV();
-            if (ws && ws.readyState === WebSocket.OPEN) {
-              connected = true;
-              break;
-            }
-          } catch(err) {
-            await new Promise(r => setTimeout(r, 3000));
-          }
-        }
-
-        stopStopwatch();
-
-        if (connected) {
-          sendPower();
-          setToggleState('on');
-          log('✅ System successfully awakened and powered ON!', 'ok');
-        } else {
-          log('❌ System is online, but secure control channel handshake failed. Reverting toggle.', 'err');
-          setToggleState(previousState);
-        }
-      }
-
-      powerBusy = false;
-    }
-
-    // ── INIT ──────────────────────────────────────────
-    window.onload = async () => {
-      loadSettings();
-      connectBridge();
-      updateStopwatchDisplay();
-      log('Performing initial background system state check...', 'info');
-      const up = await checkStatus();
-      if (up) {
+      // Try connecting repeatedly
+      let attempt = 0;
+      while (attempt < 40) {
+        attempt++;
+        log(`Connect attempt ${attempt}/40...`);
         try {
-          await connectTV();
-          setToggleState('on');
-          log('✅ System initial state: ON', 'ok');
+          await connectWS();
+          // Connected! Now send KEY_POWER to turn screen on
+          await new Promise(r => setTimeout(r, 500));
+          sendKey('KEY_POWER');
+          log('✅ TV ON - KEY_POWER sent', 'ok');
+          busy = false;
+          return;
         } catch(e) {
-          setToggleState('off');
+          log(`Attempt ${attempt} failed: ${e.message}`, 'err');
+          // Resend WoL every 5 attempts
+          if (attempt % 5 === 0) sendWol();
+          await new Promise(r => setTimeout(r, 3000));
         }
-      } else {
-        setToggleState('off');
-        log('💤 System initial state: OFF / Deep Sleep', 'info');
       }
+
+      setStatus('● TV: FAILED', 'off');
+      log('❌ Could not wake TV', 'err');
+      busy = false;
+    }
+
+    // ── TV OFF ──────────────────────────────────────
+    function tvOff() {
+      if (!connected) { log('TV already OFF', 'info'); return; }
+      log('=== TV OFF ===');
+      sendKey('KEY_POWER');
+      connected = false;
+      setStatus('● TV: OFF', 'off');
+      if (ws) { try { ws.close(); } catch(e){} ws = null; }
+      log('✅ KEY_POWER sent', 'ok');
+    }
+
+    // ── INIT ────────────────────────────────────────
+    window.onload = () => {
+      connectBridge();
+      // Try connecting to TV on load
+      connectWS().catch(() => setStatus('● TV: OFF/STANDBY', 'off'));
     };
   </script>
 </body>

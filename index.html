@@ -1473,29 +1473,57 @@ function tvOff() {
       if (ws) { try { ws.close(); } catch(e){} ws = null; }
       connected = false;
       tvState = 'standby';
-    }, 1500);
+    }, 200);
   }
 
-  function tvOn() {
+  function showPowerToast() {
+    const existing = document.getElementById('powerToast');
+    if (existing) existing.remove();
+    const overlay = document.createElement('div');
+    overlay.id = 'powerToast';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.85);animation:fadeIn 0.3s ease;';
+    overlay.innerHTML = `
+      <style>
+        @keyframes slideDown{from{opacity:0;transform:translateY(-60px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes slideUp{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+      </style>
+      <div style="animation:slideDown 0.4s ease;text-align:center;margin-bottom:24px;">
+        <div style="font-size:52px;animation:pulse 1.5s infinite;">📺</div>
+        <div style="font-size:22px;font-weight:bold;color:#ce93d8;margin-top:12px;">TV in Deep Sleep</div>
+      </div>
+      <div style="animation:slideUp 0.4s ease 0.2s both;text-align:center;">
+        <div style="font-size:36px;">⚡</div>
+        <div style="font-size:16px;color:#fff;margin-top:8px;">Press power on</div>
+        <div style="font-size:16px;color:#fff;">physical remote once</div>
+      </div>`;
+    overlay.onclick = () => overlay.remove();
+    document.body.appendChild(overlay);
+    setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 4000);
+  }
+
+    function tvOn() {
     if (connected) return;
-    manualDisconnect = false;
-    if (window._tvOnInterval) clearInterval(window._tvOnInterval);
-    if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
-      connecting = false;
-      connect();
-    }
-    let attempts = 0;
-    window._tvOnInterval = setInterval(() => {
-      attempts++;
-      if (connected) {
-        clearInterval(window._tvOnInterval);
-        sendKey('KEY_POWER');
-
-      } else if (attempts > 20) {
-        clearInterval(window._tvOnInterval);
-
-      }
-    }, 500);
+    const testWs = new WebSocket(`wss://${TV_IP}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}&token=${token}`);
+    testWs.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'ms.channel.connect') {
+          ws = testWs;
+          connected = true;
+          manualDisconnect = false;
+          tvState = 'connected';
+          if (msg.data?.token) { token = msg.data.token; localStorage.setItem('samsung_tv_token', token); }
+          setTVStatus('connected');
+          sendKey('KEY_POWER');
+        }
+      } catch(err) {}
+    };
+    testWs.onerror = () => {
+      try { testWs.close(); } catch(e) {}
+      showPowerToast();
+    };
   }
 
   function tvPower() { if (connected) tvOff(); else tvOn(); }
@@ -2125,12 +2153,21 @@ function tvOff() {
 
   // ─── TOAST ────────────────────────────────────────────────
   let toastTimer = null;
-  function showToast(msg) {
+  function showToast(msg, duration) {
     const t = document.getElementById('toast');
-    t.textContent = msg;
+    const isPowerMsg = msg.includes('physical remote');
+    t.style.background = isPowerMsg ? '#7b1fa2' : '#222';
+    t.style.fontSize = isPowerMsg ? '14px' : '';
+    t.style.padding = isPowerMsg ? '14px 24px' : '';
+    t.style.borderRadius = isPowerMsg ? '16px' : '';
+    t.style.boxShadow = isPowerMsg ? '0 0 20px rgba(156,39,176,0.6)' : '';
+    t.innerHTML = msg;
     t.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => t.classList.remove('show'), 2500);
+    toastTimer = setTimeout(() => {
+      t.classList.remove('show');
+      t.style = '';
+    }, duration || (isPowerMsg ? 4000 : 2500));
   }
 
   // ─── INIT ─────────────────────────────────────────────────

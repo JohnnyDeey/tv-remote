@@ -95,8 +95,26 @@ async def handler(websocket):
             except:
                 pass
 
+async def keep_wss_alive():
+    import ssl
+    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+    TV_IP = "192.168.68.109"
+    uri = f'wss://{TV_IP}:8002/api/v2/channels/samsung.remote.control?name=a2VlcGFsaXZl'
+    while True:
+        try:
+            async with websockets.connect(uri, ssl=ssl_ctx) as tv_ws:
+                print("TV WSS keep-alive connected")
+                while True:
+                    await asyncio.sleep(5)
+                    await tv_ws.ping()
+        except Exception as e:
+            await asyncio.sleep(3)
+
 async def main():
     async with websockets.serve(handler, "0.0.0.0", PORT):
+        asyncio.create_task(keep_wss_alive())
         await asyncio.Future()
 
 asyncio.run(main())
