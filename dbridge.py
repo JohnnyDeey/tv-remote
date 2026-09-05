@@ -149,7 +149,7 @@ async def keep_wss_alive():
             await asyncio.sleep(10)
             continue
         try:
-            uri = f'wss://{tv_ip}:8002/api/v2/channels/samsung.remote.control?name=a2VlcGFsaXZl'
+            uri = f'wss://{tv_ip}:8002/api/v2/channels/samsung.remote.control?name=VFZSZW1vdGUtRlZXSE8=&token=27761039'
             async with websockets.connect(uri, ssl=ssl_ctx) as tv_ws:
                 while True:
                     await asyncio.sleep(5)
