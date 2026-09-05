@@ -504,6 +504,7 @@
 <!-- REMOTE UI -->
 <div class="status-bar">
   <h1 id="app-title">📺 TV Remote</h1>
+  <button onclick="location.reload()" style="background:none;border:none;color:#888;font-size:16px;cursor:pointer;padding:4px;margin-left:4px;" title="Refresh">🔄</button>
   <div style="display:flex;align-items:center;gap:6px;margin-left:8px;">
     <div style="display:flex;align-items:center;gap:3px;">
       <div id="dot-tv" style="width:8px;height:8px;border-radius:50%;background:#ef5350;transition:background 0.5s;"></div>
@@ -1582,8 +1583,27 @@ function tvOff() {
   }
 
       function checkWifi() {
-    return fetch('http://192.168.68.1/favicon.ico', { mode: 'no-cors', signal: AbortSignal.timeout(2000) })
+    const bridgeIp = localStorage.getItem('bridge_ip') || '192.168.68.107';
+    const routerIp = bridgeIp.split('.').slice(0, 3).join('.') + '.1';
+    return fetch(`http://${routerIp}/favicon.ico`, { mode: 'no-cors', signal: AbortSignal.timeout(2000) })
       .then(() => true).catch(() => false);
+  }
+
+  async function findDecoder() {
+    const subnet = '192.168.68.';
+    for (let i = 1; i <= 254; i++) {
+      const ip = subnet + i;
+      try {
+        const ws = new WebSocket(`ws://${ip}:8765`);
+        const found = await new Promise(resolve => {
+          ws.onopen = () => { ws.close(); resolve(ip); };
+          ws.onerror = () => resolve(null);
+          setTimeout(() => { try{ws.close();}catch(e){} resolve(null); }, 300);
+        });
+        if (found) return found;
+      } catch(e) {}
+    }
+    return null;
   }
 
   function connectDigi() {
@@ -1601,14 +1621,50 @@ function tvOff() {
       setDigiStatus(true, 'Connected');
       digiWs.send(JSON.stringify({ action: 'find_tv' }));
     };
-    digiWs.onerror = () => setDigiStatus(false, 'Bridge offline');
+    digiWs.onerror = () => {
+      setDigiStatus(false, 'Bridge offline');
+      digiFailCount++;
+      if (digiFailCount >= 5) {
+        digiFailCount = 0;
+        checkWifi().then(online => {
+          if (!online) {
+            showToast('📶 Please connect to WiFi to use the remote');
+          } else {
+            showToast('🔍 Searching for decoder...');
+            findDecoder().then(ip => {
+              if (ip) {
+                localStorage.setItem('bridge_ip', ip);
+                showToast('✅ Decoder found at ' + ip);
+                connectDigi();
+              } else {
+                showToast('⚠️ Decoder not found — check it is on');
+              }
+            });
+          }
+        });
+      }
+    };
     digiWs.onclose = () => {
       setDigiStatus(false, 'Disconnected');
       digiFailCount++;
       if (digiFailCount >= 5) {
         digiFailCount = 0;
         checkWifi().then(online => {
-          if (!online) showToast('📶 Please connect to WiFi to use the remote');
+          if (!online) {
+            showToast('📶 Please connect to WiFi to use the remote');
+          } else {
+            // WiFi is on but bridge not found — scan for decoder
+            showToast('🔍 Searching for decoder...');
+            findDecoder().then(ip => {
+              if (ip) {
+                localStorage.setItem('bridge_ip', ip);
+                showToast('✅ Decoder found at ' + ip);
+                connectDigi();
+              } else {
+                showToast('⚠️ Decoder not found — check it is on');
+              }
+            });
+          }
         });
       }
       setTimeout(connectDigi, 1000);
@@ -2201,10 +2257,26 @@ function tvOff() {
       TV_IP = savedTvIp;
       document.getElementById('ip-input').value = savedTvIp;
       document.getElementById('overlay').style.display = 'none';
-      if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) {
-        connect();
+      // Check WiFi before connecting
+      if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        const { Network } = Capacitor.Plugins;
+        if (Network) {
+          Network.getStatus().then(status => {
+            if (status.connectionType !== 'wifi') {
+              showToast('📶 Please connect to WiFi to use the remote');
+            } else {
+              if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) connect();
+              connectDigi();
+            }
+          });
+        } else {
+          if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) connect();
+          connectDigi();
+        }
+      } else {
+        if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) connect();
+        connectDigi();
       }
-      connectDigi();
     }
     updateCertLink();
     switchDevice(currentDevice);
