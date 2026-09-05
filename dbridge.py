@@ -128,7 +128,7 @@ TV_MAC = "74:24:ca:d7:c6:03"
 def find_tv_ip():
     try:
         result = subprocess.run(
-            ['ip', 'neigh'],
+            ['/data/data/com.termux/files/usr/bin/adb', '-s', 'localhost:5555', 'shell', 'ip neigh'],
             capture_output=True, text=True
         )
         for line in result.stdout.splitlines():
