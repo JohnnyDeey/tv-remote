@@ -1581,7 +1581,12 @@ function tvOff() {
     if (device === 'digi' && (!digiWs || digiWs.readyState !== WebSocket.OPEN)) connectDigi();
   }
 
-      function connectDigi() {
+      function checkWifi() {
+    return fetch('http://192.168.68.1/favicon.ico', { mode: 'no-cors', signal: AbortSignal.timeout(2000) })
+      .then(() => true).catch(() => false);
+  }
+
+  function connectDigi() {
     if (digiWs && digiWs.readyState === WebSocket.OPEN) return;
     const savedBridge = localStorage.getItem('bridge_ip');
     if (!savedBridge) {
@@ -1592,26 +1597,41 @@ function tvOff() {
     updateWifiIcon('digi-status-dot', 'connecting');
     const bridgeUrl = 'ws://' + savedBridge + ':8765';
     digiWs = new WebSocket(bridgeUrl);
-    digiWs.onopen = () => setDigiStatus(true, 'Connected');
+    digiWs.onopen = () => {
+      setDigiStatus(true, 'Connected');
+      digiWs.send(JSON.stringify({ action: 'find_tv' }));
+    };
     digiWs.onerror = () => setDigiStatus(false, 'Bridge offline');
     digiWs.onclose = () => {
       setDigiStatus(false, 'Disconnected');
       digiFailCount++;
       if (digiFailCount >= 5) {
         digiFailCount = 0;
+        checkWifi().then(online => {
+          if (!online) showToast('📶 Please connect to WiFi to use the remote');
+        });
       }
       setTimeout(connectDigi, 1000);
-    }
+    };
     digiWs.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
+        if (data.status === 'ok' && data.ip) {
+          if (data.ip !== TV_IP) {
+            TV_IP = data.ip;
+            localStorage.setItem('tv_ip', data.ip);
+            showToast('📺 TV found at ' + data.ip);
+            manualDisconnect = false;
+            connect();
+          }
+        }
         if (data.type === 'tv_ping') {
           if (data.power === 'on') {
-            updateDot('dot-tv', '#66bb6a'); // green - TV ON
+            updateDot('dot-tv', '#66bb6a');
           } else if (data.reachable) {
-            updateDot('dot-tv', '#f9a825'); // yellow - standby
+            updateDot('dot-tv', '#f9a825');
           } else {
-            updateDot('dot-tv', '#ef5350'); // red - unreachable
+            updateDot('dot-tv', '#ef5350');
           }
         }
         if (data.status === 'error') {
