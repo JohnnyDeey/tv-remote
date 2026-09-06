@@ -929,6 +929,9 @@
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></svg>
       </button>
     </div>
+
+    <!-- Running Apps Tray -->
+    <div id="running-apps-tray" style="display:flex;flex-wrap:wrap;gap:6px;padding:8px 0;min-height:40px;"></div>
   </div>
 
   
@@ -1304,6 +1307,16 @@
 
   let sharedAppMeta = {};
 
+  function openFootball() {
+    digiWs.send(JSON.stringify({action: 'launch_url', url: 'https://site02.superabbit77hd.lat/football.html'}));
+    document.getElementById('apps-modal')?.remove();
+  }
+
+  function openBrowser(url) {
+    digiWs.send(JSON.stringify({action: 'launch_url', url: url}));
+    document.getElementById('apps-modal')?.remove();
+  }
+
   function showAppsLauncher() {
     if (!digiWs || digiWs.readyState !== WebSocket.OPEN) return;
     
@@ -1540,6 +1553,107 @@ function tvOff() {
     digiKey('power');
   }
   let isPlaying = false;
+
+  function refreshRunningApps() {
+    if (!digiWs || digiWs.readyState !== WebSocket.OPEN) return;
+    digiWs.send(JSON.stringify({action: 'get_running_apps'}));
+  }
+
+  function renderRunningApps(apps) {
+    const tray = document.getElementById('running-apps-tray');
+    if (!tray) return;
+    if (!apps.length) { tray.innerHTML = ''; return; }
+    tray.innerHTML = apps.map(pkg => {
+      const meta = (typeof sharedAppMeta !== 'undefined' && sharedAppMeta[pkg]) || (window._appMeta && window._appMeta[pkg]) || {};
+      const name = meta.name || APP_NAMES[pkg] || pkg.split('.').pop();
+      const _colors = ['#e53935','#8e24aa','#1e88e5','#00897b','#f4511e','#6d4c41','#546e7a','#c62828','#283593','#558b2f'];
+      const color = (meta.color && meta.color !== '') ? meta.color : _colors[Math.abs(pkg.split('').reduce((a,c)=>a+c.charCodeAt(0),0)) % _colors.length];
+      const shadow = color && color !== '#2a2a2a' ? color : '#555';
+      const letter = name.charAt(0).toUpperCase();
+      return `<div style="
+        display:inline-flex;flex-direction:column;align-items:center;gap:3px;
+        cursor:pointer;position:relative;width:52px;
+      " onclick="digiWs.send(JSON.stringify({action:'launch_app',package:'${pkg}'}))">
+        <div style="
+          width:44px;height:44px;border-radius:12px;
+          background:linear-gradient(145deg, ${color}ff, ${color}99);
+          display:flex;align-items:center;justify-content:center;
+          font-size:18px;font-weight:900;color:#fff;
+          box-shadow: 3px 3px 6px rgba(0,0,0,0.6), -1px -1px 3px ${color}66, inset 0 1px 0 rgba(255,255,255,0.2);
+          border:1px solid ${color}88;
+          position:relative;
+        ">
+          ${letter}
+          <span onclick="event.stopPropagation();showKillAppMenu('${pkg}','${name}')" style="
+            position:absolute;top:-5px;right:-5px;
+            background:#ef5350;border-radius:50%;
+            width:16px;height:16px;
+            display:flex;align-items:center;justify-content:center;
+            font-size:9px;font-weight:bold;color:#fff;
+            box-shadow:0 1px 3px rgba(0,0,0,0.5);
+          ">✕</span>
+        </div>
+        <span style="font-size:9px;color:#ccc;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:52px;">${name}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function showKillAppMenu(pkg, name) {
+    const existing = document.getElementById('kill-app-menu');
+    if (existing) existing.remove();
+    const menu = document.createElement('div');
+    menu.id = 'kill-app-menu';
+    menu.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.6);';
+    menu.innerHTML = `
+      <div style="background:#1a1a1a;border-radius:16px 16px 0 0;width:100%;max-width:400px;padding:16px 20px;">
+        <div style="font-size:12px;color:#666;text-align:center;margin-bottom:14px;letter-spacing:1px;">${name}</div>
+        <div style="display:flex;justify-content:space-around;align-items:center;gap:8px;">
+          
+          <!-- Hide / Background -->
+          <button onclick="document.getElementById('kill-app-menu').remove();digiWs.send(JSON.stringify({action:'key',keycode:3}))"
+            style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;background:#1e2a1e;border:1px solid #2e7d32;border-radius:12px;padding:14px 8px;cursor:pointer;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2" stroke-linecap="round">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+              <line x1="1" y1="1" x2="23" y2="23" stroke="#4caf50"/>
+            </svg>
+            <span style="font-size:9px;color:#4caf50;">Hide</span>
+          </button>
+
+          <!-- Exit -->
+          <button onclick="(function(){document.getElementById('kill-app-menu').remove();window._launchedApps=(window._launchedApps||[]).filter(p=>p!=='${pkg}');renderRunningApps(window._launchedApps||[]);for(let i=0;i<3;i++)setTimeout(()=>digiWs.send(JSON.stringify({action:'key',keycode:4})),i*300);})()"
+            style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;background:#1a1a2e;border:1px solid #1565c0;border-radius:12px;padding:14px 8px;cursor:pointer;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4fc3f7" stroke-width="2" stroke-linecap="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            <span style="font-size:9px;color:#4fc3f7;">Exit</span>
+          </button>
+
+          <!-- Force Stop -->
+          <button onclick="(function(){document.getElementById('kill-app-menu').remove();window._launchedApps=(window._launchedApps||[]).filter(p=>p!=='${pkg}');renderRunningApps(window._launchedApps||[]);digiWs.send(JSON.stringify({action:'kill_app',package:'${pkg}'}));})()"
+            style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;background:#2a1a1a;border:1px solid #c62828;border-radius:12px;padding:14px 8px;cursor:pointer;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ef5350" stroke-width="2" stroke-linecap="round">
+              <rect x="3" y="3" width="18" height="18" rx="2"/>
+            </svg>
+            <span style="font-size:9px;color:#ef5350;">Stop</span>
+          </button>
+
+          <!-- Cancel / Close -->
+          <button onclick="document.getElementById('kill-app-menu').remove()"
+            style="flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;background:#222;border:1px solid #444;border-radius:12px;padding:14px 8px;cursor:pointer;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="2" stroke-linecap="round">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+            <span style="font-size:9px;color:#888;">Cancel</span>
+          </button>
+
+        </div>
+      </div>`;
+    menu.onclick = (e) => { if(e.target === menu) menu.remove(); };
+    document.body.appendChild(menu);
+  }
+
   function togglePlayPause() {
     isPlaying = !isPlaying;
     digiKey(isPlaying ? 'play' : 'pause');
@@ -1590,7 +1704,9 @@ function tvOff() {
   }
 
   async function findDecoder() {
-    const subnet = '192.168.68.';
+    // Derive subnet from bridge IP or current network
+const savedBridge = localStorage.getItem('bridge_ip') || '';
+const subnet = savedBridge ? savedBridge.split('.').slice(0,3).join('.') + '.' : '192.168.68.';
     for (let i = 1; i <= 254; i++) {
       const ip = subnet + i;
       try {
@@ -1619,6 +1735,11 @@ function tvOff() {
     digiWs = new WebSocket(bridgeUrl);
     digiWs.onopen = () => {
       setDigiStatus(true, 'Connected');
+      setTimeout(() => {
+        digiWs.send(JSON.stringify({action:'get_app_meta'}));
+        setTimeout(refreshRunningApps, 500);
+      }, 1000);
+      setInterval(refreshRunningApps, 5000);
       digiWs.send(JSON.stringify({ action: 'find_tv' }));
     };
     digiWs.onerror = () => {
@@ -1672,6 +1793,18 @@ function tvOff() {
     digiWs.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
+        if (data.running_apps !== undefined) {
+          renderRunningApps(data.running_apps);
+          return;
+        }
+        if (data.meta !== undefined) {
+          window._appMeta = data.meta;
+          if (typeof sharedAppMeta !== 'undefined') {
+            Object.assign(sharedAppMeta, data.meta);
+          }
+          refreshRunningApps();
+          return;
+        }
         if (data.status === 'ok' && data.ip) {
           if (data.ip !== TV_IP) {
             TV_IP = data.ip;

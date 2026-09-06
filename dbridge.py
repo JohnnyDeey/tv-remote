@@ -4,6 +4,7 @@ import subprocess
 import websockets
 
 PORT = 8765
+launched_apps = []
 ADB = ["/data/data/com.termux/files/usr/bin/adb", "-s", "localhost:5555", "shell"]
 
 async def handler(websocket):
@@ -69,6 +70,8 @@ async def handler(websocket):
             elif action == "launch_app":
                 package = data.get("package", "")
                 subprocess.run(ADB + ["monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1"])
+                if package and package not in launched_apps:
+                    launched_apps.append(package)
 
             elif action == "save_app_meta":
                 pkg = data.get("package", "")
@@ -110,6 +113,16 @@ async def handler(websocket):
                 print(f"find_tv called, result: {ip}")
                 await websocket.send(json.dumps({"status": "ok", "ip": ip}))
                 continue
+
+            elif action == "get_running_apps":
+                await websocket.send(json.dumps({"status": "ok", "running_apps": launched_apps}))
+                continue
+
+            elif action == "kill_app":
+                pkg = data.get("package", "")
+                subprocess.run(ADB + ["am", "force-stop", pkg])
+                if pkg in launched_apps:
+                    launched_apps.remove(pkg)
 
             elif action == "longpress":
                 keycode = data.get("keycode", 0)
