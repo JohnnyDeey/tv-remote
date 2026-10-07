@@ -116,7 +116,6 @@ async def handler(websocket):
 
             elif action == "find_tv":
                 ip = find_tv_ip()
-                print(f"find_tv called, result: {ip}")
                 await websocket.send(json.dumps({"status": "ok", "ip": ip}))
                 continue
 
