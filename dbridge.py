@@ -7,6 +7,12 @@ PORT = 8765
 launched_apps = []
 ADB = ["/data/data/com.termux/files/usr/bin/adb", "-s", "localhost:5555", "shell"]
 
+def reconnect_adb():
+    try:
+        subprocess.run(["/data/data/com.termux/files/usr/bin/adb", "connect", "localhost:5555"], timeout=5)
+    except:
+        pass
+
 async def handler(websocket):
     async for message in websocket:
         try:
@@ -152,27 +158,21 @@ def find_tv_ip():
     return None
 
 async def keep_wss_alive():
-    import ssl
-    ssl_ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-    ssl_ctx.check_hostname = False
-    ssl_ctx.verify_mode = ssl.CERT_NONE
+    pass  # Removed — phone handles TV connection directly
+
+async def keep_adb_alive():
     while True:
-        tv_ip = find_tv_ip()
-        if not tv_ip:
-            await asyncio.sleep(10)
-            continue
         try:
-            uri = f'wss://{tv_ip}:8002/api/v2/channels/samsung.remote.control?name=VFZSZW1vdGUtRlZXSE8=&token=27761039'
-            async with websockets.connect(uri, ssl=ssl_ctx) as tv_ws:
-                while True:
-                    await asyncio.sleep(5)
-                    await tv_ws.ping()
+            result = subprocess.run(ADB + ["echo", "ok"], capture_output=True, text=True, timeout=5)
+            if "ok" not in result.stdout:
+                reconnect_adb()
         except:
-            await asyncio.sleep(3)
+            reconnect_adb()
+        await asyncio.sleep(30)
 
 async def main():
     async with websockets.serve(handler, "0.0.0.0", PORT):
-        asyncio.create_task(keep_wss_alive())
+        asyncio.create_task(keep_adb_alive())
         await asyncio.Future()
 
 asyncio.run(main())
