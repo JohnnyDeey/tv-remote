@@ -1992,7 +1992,32 @@ function tvOff() {
     });
   }
 
-  async function findDecoder() {
+  // known networks: the decoder (bridge) and TV addresses on each
+  const NET_PROFILES = [
+    { name: 'Home',    bridge: '192.168.68.107', tv: '192.168.68.100' },
+    { name: 'Hotspot', bridge: '10.136.134.200',  tv: '10.136.134.201'   }
+  ];
+  let _findBusy = null;
+
+  // tries both known networks at once (about 2 seconds); only one search runs at a time
+  function findDecoder() {
+    if (_findBusy) return _findBusy;
+    _findBusy = (async () => {
+      const hits = await Promise.all(NET_PROFILES.map(p => probeBridge(p.bridge, 2500)));
+      const i = hits.findIndex(Boolean);
+      if (i >= 0) {
+        const p = NET_PROFILES[i];
+        localStorage.setItem('tv_ip', p.tv);
+        if (TV_IP !== p.tv) { TV_IP = p.tv; manualDisconnect = false; connect(); }
+        return p.bridge;
+      }
+      return await scanForDecoder();
+    })();
+    _findBusy.finally(() => { _findBusy = null; });
+    return _findBusy;
+  }
+
+  async function scanForDecoder() {
     const saved = localStorage.getItem('bridge_ip') || '';
     const savedSubnet = saved ? saved.split('.').slice(0, 3).join('.') + '.' : null;
     const subnets = [...new Set([savedSubnet, ...SCAN_SUBNETS].filter(Boolean))];
@@ -2033,7 +2058,7 @@ function tvOff() {
     digiWs.onerror = () => {
       setDigiStatus(false, 'Bridge offline');
       digiFailCount++;
-      if (digiFailCount >= 5) {
+      if (digiFailCount >= 2) {
         digiFailCount = 0;
         checkWifi().then(online => {
           if (!online) {
@@ -2056,7 +2081,7 @@ function tvOff() {
     digiWs.onclose = () => {
       setDigiStatus(false, 'Disconnected');
       digiFailCount++;
-      if (digiFailCount >= 5) {
+      if (digiFailCount >= 2) {
         digiFailCount = 0;
         checkWifi().then(online => {
           if (!online) {
@@ -2651,6 +2676,7 @@ function tvOff() {
   // ─── TOAST ────────────────────────────────────────────────
   let toastTimer = null;
   function showToast(msg, duration) {
+    if (/Searching for decoder|Decoder found|Decoder not found|TV found|Please connect to WiFi|Set DIGI Bridge IP/.test(msg)) return;
     const t = document.getElementById('toast');
     const isPowerMsg = msg.includes('physical remote');
     t.style.background = isPowerMsg ? '#7b1fa2' : '#222';
