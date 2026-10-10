@@ -546,6 +546,20 @@
 </style>
 </head>
 <body>
+<!-- device testing naming -->
+<script>
+  function saveDeviceName(v) {
+    localStorage.setItem('device_name', v);
+    // a new name is a new device for the TV: old pairing tokens no longer apply
+    Object.keys(localStorage).filter(function (k) { return k.indexOf('samsung_tv_token') === 0; }).forEach(function (k) { localStorage.removeItem(k); });
+    location.reload();
+  }
+  function renameDevice() {
+    var v = (document.getElementById('device-name-input').value || '').trim();
+    if (!v) return;
+    saveDeviceName(v);
+  }
+</script>
 <!-- network call-out: tap a dot to see the network state (symbols only) -->
 <style>
   @keyframes dotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,83,80,.65); } 50% { box-shadow: 0 0 0 5px rgba(239,83,80,0); } }
@@ -710,6 +724,10 @@
 
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">TV IP: <span id="settings-ip" style="color:var(--accent);"></span></div>
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Device Name: <span id="device-name-display" style="color:var(--accent);"></span></div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input id="device-name-input" type="text" maxlength="20" placeholder="Name this device (e.g. John phone)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
+        <button onclick="renameDevice()" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#f0f0f0;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a;">Save</button>
+      </div>
 
       <div style="display:flex;gap:8px;margin-bottom:8px;">
         <input id="tv-ip-input" type="text" placeholder="192.168.68.x" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
@@ -1191,7 +1209,7 @@
     deviceName = 'TVRemote-' + Math.random().toString(36).substring(2, 7).toUpperCase();
     localStorage.setItem('device_name', deviceName);
   }
-  const APP_NAME = btoa(deviceName);
+  const APP_NAME = btoa(unescape(encodeURIComponent(deviceName)));
 
   // ─── OVERLAY ──────────────────────────────────────────────
   function startConnect() {
@@ -2126,6 +2144,7 @@ function tvOff() {
 
   let _findBusy = null;
 
+  // I am going to try to make a comment to this filesee what is happening
   // tries both known networks at once (about 2 seconds); only one search runs at a time
   function findDecoder() {
     if (_findBusy) return _findBusy;
