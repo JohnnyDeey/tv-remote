@@ -546,6 +546,101 @@
 </style>
 </head>
 <body>
+<!-- ===== on-screen debug log (remove when finished) ===== -->
+<script>
+(function () {
+  var lines = [], box = null, probeErrors = 0;
+  function ts() { return new Date().toLocaleTimeString('en-GB'); }
+  function render() { if (box) { box.textContent = lines.slice(-80).join('\n'); box.scrollTop = box.scrollHeight; } }
+  function log(m) { lines.push(ts() + ' ' + m); if (lines.length > 400) lines.shift(); render(); }
+  window.dbg = log;
+
+  function isKnown(u) {
+    var b = localStorage.getItem('bridge_ip') || '', t = localStorage.getItem('tv_ip') || '';
+    return (b && u.indexOf(b + ':') > -1) || (t && u.indexOf(t + ':') > -1);
+  }
+
+  // watch every WebSocket the app opens
+  var NativeWS = window.WebSocket;
+  window.WebSocket = function (url, protocols) {
+    var ws = protocols ? new NativeWS(url, protocols) : new NativeWS(url);
+    var u = String(url).replace(/\?.*$/, ''), known = isKnown(u), t0 = Date.now();
+    ws.addEventListener('open', function () { log('WS open  ' + u + ' ' + (Date.now() - t0) + 'ms'); });
+    ws.addEventListener('error', function () { if (known) log('WS error ' + u); else probeErrors++; });
+    ws.addEventListener('close', function (e) { if (known) log('WS close ' + u + ' code=' + e.code); });
+    if (String(url).indexOf(':8002') > -1) {
+      var tk = (String(url).match(/token=([^&]+)/) || [])[1];
+      log('TV connect, sending token=' + (tk ? tk.slice(0, 4) + '..' : 'none'));
+      ws.addEventListener('message', function (ev) {
+        try {
+          var d = JSON.parse(ev.data);
+          log('TV says ' + d.event + (d.data && d.data.token ? ' new token=' + String(d.data.token).slice(0, 4) + '..' : ''));
+        } catch (e) {}
+      });
+    }
+    return ws;
+  };
+  window.WebSocket.prototype = NativeWS.prototype;
+  ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'].forEach(function (k) { window.WebSocket[k] = NativeWS[k]; });
+
+  // console + errors
+  ['log', 'warn', 'error'].forEach(function (k) {
+    var o = console[k];
+    console[k] = function () {
+      try { log('console.' + k + ': ' + Array.prototype.slice.call(arguments).map(String).join(' ')); } catch (e) {}
+      return o.apply(console, arguments);
+    };
+  });
+  window.addEventListener('error', function (e) { log('ERROR: ' + e.message + ' @' + (e.lineno || '?')); });
+  window.addEventListener('unhandledrejection', function (e) { log('REJECT: ' + ((e.reason && e.reason.message) || e.reason)); });
+
+  // toasts
+  window.addEventListener('load', function () {
+    var orig = window.showToast;
+    if (typeof orig === 'function') {
+      window.showToast = function (m, d) { log('TOAST: ' + m); return orig.apply(this, arguments); };
+    }
+    var cap = (window.Capacitor && window.Capacitor.getPlatform) ? window.Capacitor.getPlatform() : 'web';
+    log('start platform=' + cap + ' url=' + location.href);
+  });
+
+  // status line every 3 seconds
+  setInterval(function () {
+    try {
+      log('state bridge_ip=' + localStorage.getItem('bridge_ip') + ' tv_ip=' + localStorage.getItem('tv_ip') +
+          ' digiWs=' + ((typeof digiWs !== 'undefined' && digiWs) ? digiWs.readyState : 'none') +
+          ' fails=' + ((typeof digiFailCount !== 'undefined') ? digiFailCount : '?') +
+          ' online=' + navigator.onLine + ' token=' + (localStorage.getItem('samsung_tv_token') ? 'yes' : 'none') + ' dev=' + localStorage.getItem('device_name'));
+      if (probeErrors) { log('scan: ' + probeErrors + ' probes failed'); probeErrors = 0; }
+    } catch (e) {}
+  }, 3000);
+
+  // panel
+  function build() {
+    var btn = document.createElement('button');
+    btn.textContent = 'DBG';
+    btn.style.cssText = 'position:fixed;top:6px;right:6px;z-index:100000;padding:4px 8px;border-radius:6px;border:1px solid #888;background:#000;color:#0f0;font:11px monospace;opacity:.75;';
+    var wrap = document.createElement('div');
+    wrap.style.cssText = 'display:none;position:fixed;left:0;right:0;bottom:0;z-index:99999;background:rgba(0,0,0,.9);';
+    var copy = document.createElement('button');
+    copy.textContent = 'COPY';
+    copy.style.cssText = 'position:absolute;top:4px;right:6px;padding:3px 8px;border-radius:6px;border:1px solid #888;background:#111;color:#0f0;font:11px monospace;';
+    box = document.createElement('pre');
+    box.style.cssText = 'margin:0;height:40vh;overflow:auto;color:#0f0;padding:6px;font:11px monospace;white-space:pre-wrap;word-break:break-all;';
+    copy.onclick = function () {
+      var txt = lines.join('\n');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(txt).then(function () { log('copied ' + lines.length + ' lines'); }, function () { log('copy failed, long-press the text to select it'); });
+      } else { log('copy not available, long-press the text to select it'); }
+    };
+    btn.onclick = function () { wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none'; render(); };
+    wrap.appendChild(box); wrap.appendChild(copy);
+    document.body.appendChild(wrap); document.body.appendChild(btn);
+    render();
+  }
+  if (document.body) build(); else document.addEventListener('DOMContentLoaded', build);
+})();
+</script>
 <!-- pillow gradient + press effect for the D-pad arrow sectors -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
