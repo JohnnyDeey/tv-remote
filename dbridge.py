@@ -2,6 +2,7 @@ import asyncio
 import json
 import subprocess
 import websockets
+import socket
 
 PORT = 8765
 launched_apps = []
@@ -115,6 +116,8 @@ async def handler(websocket):
                 sock.close()
 
             elif action == "find_tv":
+                warm_arp(websocket.local_address[0])
+                await asyncio.sleep(2)
                 ip = find_tv_ip()
                 await websocket.send(json.dumps({"status": "ok", "ip": ip}))
                 continue
@@ -142,6 +145,19 @@ async def handler(websocket):
                 pass
 
 TV_MAC = "74:24:ca:d7:c6:03"
+
+def warm_arp(local_ip):
+    # send a tiny packet to every address on our subnet so the decoder
+    # learns which devices are there (fills the 'ip neigh' table)
+    prefix = local_ip.rsplit('.', 1)[0]
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    s.setblocking(False)
+    for i in range(1, 255):
+        try:
+            s.sendto(b'x', (f"{prefix}.{i}", 9))
+        except Exception:
+            pass
+    s.close()
 
 def find_tv_ip():
     try:
