@@ -1221,6 +1221,7 @@
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
     connecting = true;
     tvState = 'connecting';
+    token = localStorage.getItem('samsung_tv_token_' + TV_IP) || '';
     const url = token
       ? `wss://${TV_IP}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}&token=${token}`
       : `wss://${TV_IP}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}`;
@@ -1248,7 +1249,7 @@
           tvPoweredOff = false;
           if (msg.data && msg.data.token) {
             token = msg.data.token;
-            localStorage.setItem('samsung_tv_token', token);
+            localStorage.setItem('samsung_tv_token', token); localStorage.setItem('samsung_tv_token_' + TV_IP, token);
           }
           setTVStatus('connected');
         } else if (msg.event === 'ms.channel.unauthorized') {
@@ -1888,7 +1889,7 @@ function tvOff() {
           connected = true;
           manualDisconnect = false;
           tvState = 'connected';
-          if (msg.data?.token) { token = msg.data.token; localStorage.setItem('samsung_tv_token', token); }
+          if (msg.data?.token) { token = msg.data.token; localStorage.setItem('samsung_tv_token', token); localStorage.setItem('samsung_tv_token_' + TV_IP, token); }
           setTVStatus('connected');
           sendKey('KEY_POWER');
         }
