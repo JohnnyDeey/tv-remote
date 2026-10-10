@@ -546,6 +546,99 @@
 </style>
 </head>
 <body>
+<!-- decoder link through the native ADB plugin (replaces the Termux bridge inside the Android app) -->
+<script>
+function makeAdbLink(ip) {
+  var A = Capacitor.Plugins.Adb;
+  var listeners = {};
+  var link = {
+    readyState: 0, url: 'adb://' + ip,
+    onopen: null, onclose: null, onerror: null, onmessage: null,
+    addEventListener: function (t, f) { (listeners[t] = listeners[t] || []).push(f); },
+    removeEventListener: function (t, f) { listeners[t] = (listeners[t] || []).filter(function (x) { return x !== f; }); },
+    send: function (raw) { if (link.readyState === 1) handle(JSON.parse(raw)); },
+    close: function () { if (link.readyState === 3) return; link.readyState = 3; try { A.disconnect(); } catch (e) {} fire('close', {}); }
+  };
+  function fire(type, ev) {
+    var h = link['on' + type]; if (h) h(ev);
+    (listeners[type] || []).slice().forEach(function (f) { f(ev); });
+  }
+  function reply(obj) { fire('message', { data: JSON.stringify(obj) }); }
+  function drop() { if (link.readyState === 3) return; link.readyState = 3; fire('close', {}); }
+  function sh(command) { return A.shell({ command: command }).then(function (r) { return r.output || ''; }); }
+  function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+  var special = { '#': '\\#', '&': '\\&', '*': '\\*', '(': '\\(', ')': '\\)', '?': '\\?', '<': '\\<', '>': '\\>', '|': '\\|', '"': '\\"', "'": "\\'", '!': '\\!', ';': '\\;', '`': '\\`', '$': '\\$', '\\': '\\\\' };
+  function escapeText(t) { return Array.from(t).map(function (c) { return special[c] || c; }).join('').replace(/ /g, '%s'); }
+
+  var SKIP = ['com.android.systemui', 'com.android.tv.settings', 'com.termux', 'com.control.device'];
+  async function runningApps() {
+    var rec = await sh("dumpsys activity recents | grep 'Recent #'");
+    var ps = await sh('ps -A -o NAME');
+    var alive = {}; ps.split(/\s+/).forEach(function (p) { alive[p.split(':')[0]] = true; });
+    var apps = [], re = /Recent #\d+: Task\{[^}]*?type=standard A=\d+:([\w.]+)/g, m;
+    while ((m = re.exec(rec))) {
+      var p = m[1];
+      if (!SKIP.some(function (s) { return p.indexOf(s) === 0; }) && apps.indexOf(p) < 0 && alive[p]) apps.push(p);
+    }
+    return apps;
+  }
+  async function foregroundPkg() {
+    var out = await sh("dumpsys activity activities | grep ResumedActivity");
+    var m = out.match(/ResumedActivity: ActivityRecord\{\S+ u\d+ ([\w.]+)\//);
+    return m ? m[1] : null;
+  }
+  async function exitApp(pkg) {
+    for (var i = 0; i < 5; i++) {
+      if ((await foregroundPkg()) !== pkg) { if (i === 0) await sh('am force-stop ' + pkg); break; }
+      await sh('input keyevent 4');
+      await sleep(700);
+    }
+  }
+  async function readMeta() { try { return JSON.parse((await sh('cat /sdcard/app_meta.json 2>/dev/null')) || '{}'); } catch (e) { return {}; } }
+
+  async function handle(d) {
+    try {
+      switch (d.action) {
+        case 'key': await sh('input keyevent ' + d.keycode); break;
+        case 'longpress': await sh('input keyevent --longpress ' + d.keycode); break;
+        case 'hide_keyboard': await sh('input keyevent 111'); break;
+        case 'text': await sh('input text ' + escapeText(d.text || '')); break;
+        case 'launch_app': await sh('monkey -p ' + d.package + ' -c android.intent.category.LAUNCHER 1'); break;
+        case 'kill_app': await sh('am force-stop ' + d.package); break;
+        case 'exit_app': await exitApp(d.package); break;
+        case 'get_apps': {
+          var out = await sh('cmd package list packages -3');
+          reply({ status: 'ok', apps: out.split('\n').filter(function (l) { return l.indexOf('package:') === 0; }).map(function (l) { return l.replace('package:', '').trim(); }) });
+          return;
+        }
+        case 'get_running_apps': reply({ status: 'ok', running_apps: await runningApps() }); return;
+        case 'get_app_meta': reply({ status: 'ok', meta: await readMeta() }); return;
+        case 'save_app_meta': {
+          var meta = await readMeta();
+          if (d.package) meta[d.package] = { name: d.name, color: d.color };
+          var b64 = btoa(unescape(encodeURIComponent(JSON.stringify(meta))));
+          await sh("echo '" + b64 + "' | base64 -d > /sdcard/app_meta.json");
+          break;
+        }
+        case 'find_tv': reply({ status: 'ok', ip: null }); return;   // the app finds the TV by itself now
+        default: break;
+      }
+      reply({ status: 'ok' });
+    } catch (e) { reply({ status: 'error', msg: String(e && e.message || e) }); }
+  }
+
+  A.connect({ host: ip }).then(function () {
+    if (link.readyState !== 0) return;
+    link.readyState = 1; fire('open', {});
+    var t = setInterval(function () {            // notice a dropped connection
+      if (link.readyState !== 1) { clearInterval(t); return; }
+      sh('echo 1').catch(function () { clearInterval(t); drop(); });
+    }, 15000);
+  }).catch(function () { if (link.readyState === 0) { fire('error', {}); drop(); } });
+  return link;
+}
+</script>
 <!-- device naming -->
 <script>
   function saveDeviceName(v) {
@@ -2203,9 +2296,9 @@ function tvOff() {
     }
     updateWifiIcon('digi-status-dot', 'connecting');
     const bridgeUrl = 'ws://' + savedBridge + ':8765';
-    digiWs = new WebSocket(bridgeUrl);
+    digiWs = (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Adb) ? makeAdbLink(savedBridge) : new WebSocket(bridgeUrl);
     const connectingWs = digiWs;
-    setTimeout(() => { if (connectingWs.readyState === WebSocket.CONNECTING) connectingWs.close(); }, 3000);
+    setTimeout(() => { if (connectingWs.readyState === WebSocket.CONNECTING) connectingWs.close(); }, (String(connectingWs.url).indexOf('adb://') === 0 ? 30000 : 3000));
     digiWs.onopen = () => {
       setDigiStatus(true, 'Connected');
       setTimeout(() => {
