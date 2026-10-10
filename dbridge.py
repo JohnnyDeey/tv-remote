@@ -15,14 +15,24 @@ def real_running_apps():
     # apps with a live task on the decoder, most recent first
     try:
         out = subprocess.run(ADB + ["dumpsys", "activity", "recents"], capture_output=True, text=True, timeout=8).stdout
+        alive = set(p.split(":")[0] for p in subprocess.run(ADB + ["ps", "-A", "-o", "NAME"], capture_output=True, text=True, timeout=8).stdout.split())
     except Exception:
         return launched_apps
     apps = []
     for m in re.finditer(r"Recent #\d+: Task\{[^}]*?type=standard A=\d+:([\w.]+)", out):
         pkg = m.group(1)
-        if not pkg.startswith(tuple(SKIP_PKGS)) and pkg not in apps:
+        if not pkg.startswith(tuple(SKIP_PKGS)) and pkg not in apps and pkg in alive:
             apps.append(pkg)
     return apps
+
+def foreground_pkg():
+    # package of the app currently in front, or None
+    try:
+        out = subprocess.run(ADB + ["dumpsys", "activity", "activities"], capture_output=True, text=True, timeout=8).stdout
+    except Exception:
+        return None
+    m = re.search(r"ResumedActivity: ActivityRecord\{\S+ u\d+ ([\w.]+)/", out)
+    return m.group(1) if m else None
 
 def reconnect_adb():
     try:
@@ -141,6 +151,19 @@ async def handler(websocket):
             elif action == "get_running_apps":
                 await websocket.send(json.dumps({"status": "ok", "running_apps": real_running_apps()}))
                 continue
+
+            elif action == "exit_app":
+                pkg = data.get("package", "")
+                # press Back only while this app is in front; stop as soon as it has closed
+                for i in range(5):
+                    if foreground_pkg() != pkg:
+                        if i == 0:  # not in front: nothing to press Back on, so stop it
+                            subprocess.run(ADB + ["am", "force-stop", pkg])
+                        break
+                    subprocess.run(ADB + ["input", "keyevent", "4"])
+                    await asyncio.sleep(0.7)
+                if pkg in launched_apps:
+                    launched_apps.remove(pkg)
 
             elif action == "kill_app":
                 pkg = data.get("package", "")
