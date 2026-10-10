@@ -2804,7 +2804,7 @@ function tvOff() {
         const { Network } = Capacitor.Plugins;
         if (Network) {
           Network.getStatus().then(status => {
-            if (status.connectionType !== 'wifi') {
+            if (false) { // WiFi check removed: a phone hosting a hotspot reports "cellular"
               showToast('📶 Please connect to WiFi to use the remote');
             } else {
               if (!ws || ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING) connect();
