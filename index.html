@@ -636,7 +636,7 @@ function makeAdbLink(ip) {
       sh('echo 1').catch(function () { clearInterval(t); drop(); });
     }, 15000);
   }).catch(function (e) {
-    if (!window._adbAlerted) { window._adbAlerted = true; alert('ADB link failed: ' + (e && e.message || e)); }
+    
     if (link.readyState === 0) { fire('error', {}); drop(); }
   });
   return link;
@@ -686,6 +686,8 @@ function showPairLog() {
 <style>
   @keyframes dotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,83,80,.65); } 50% { box-shadow: 0 0 0 5px rgba(239,83,80,0); } }
   .dot-pulse { animation: dotPulse 1.6s infinite; }
+  /* test buttons, hidden but kept for debugging: remove these two lines to show them again */
+  button[onclick="adbTest()"], button[onclick="showPairLog()"] { display: none !important; }
 </style>
 <script>
 (function () {
@@ -2329,7 +2331,7 @@ function tvOff() {
     }
     updateWifiIcon('digi-status-dot', 'connecting');
     const bridgeUrl = 'ws://' + savedBridge + ':8765';
-    digiWs = (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Adb) ? (function () { try { return makeAdbLink(savedBridge); } catch (e) { alert('ADB link error: ' + e.message); return new WebSocket(bridgeUrl); } })() : new WebSocket(bridgeUrl);
+    digiWs = (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Adb) ? (function () { try { return makeAdbLink(savedBridge); } catch (e) { return new WebSocket(bridgeUrl); } })() : new WebSocket(bridgeUrl);
     const connectingWs = digiWs;
     setTimeout(() => { if (connectingWs.readyState === WebSocket.CONNECTING) connectingWs.close(); }, (String(connectingWs.url).indexOf('adb://') === 0 ? 30000 : 3000));
     digiWs.onopen = () => {
