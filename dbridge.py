@@ -1,4 +1,5 @@
 import asyncio
+import re
 import json
 import subprocess
 import websockets
@@ -7,6 +8,21 @@ import socket
 PORT = 8765
 launched_apps = []
 ADB = ["/data/data/com.termux/files/usr/bin/adb", "-s", "localhost:5555", "shell"]
+
+SKIP_PKGS = {"com.android.systemui", "com.android.tv.settings", "com.termux", "com.control.device"}
+
+def real_running_apps():
+    # apps with a live task on the decoder, most recent first
+    try:
+        out = subprocess.run(ADB + ["dumpsys", "activity", "recents"], capture_output=True, text=True, timeout=8).stdout
+    except Exception:
+        return launched_apps
+    apps = []
+    for m in re.finditer(r"Recent #\d+: Task\{[^}]*?type=standard A=\d+:([\w.]+)", out):
+        pkg = m.group(1)
+        if not pkg.startswith(tuple(SKIP_PKGS)) and pkg not in apps:
+            apps.append(pkg)
+    return apps
 
 def reconnect_adb():
     try:
@@ -123,7 +139,7 @@ async def handler(websocket):
                 continue
 
             elif action == "get_running_apps":
-                await websocket.send(json.dumps({"status": "ok", "running_apps": launched_apps}))
+                await websocket.send(json.dumps({"status": "ok", "running_apps": real_running_apps()}))
                 continue
 
             elif action == "kill_app":
