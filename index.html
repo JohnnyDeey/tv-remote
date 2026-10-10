@@ -746,6 +746,7 @@
           <span style="font-size:11px;color:#555;">Version: <span id="app-version-display" style="color:#4fc3f7;"></span></span>
           <button onclick="checkAndUpdate()" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#f0f0f0;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">Check Updates</button>
 <button onclick="trustTvCertificate()" style="background:radial-gradient(circle at 35% 35%,#1a2a1a,#0a1a0a);border:1px solid rgba(79,195,247,0.3);border-radius:6px;color:#4fc3f7;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">🔐 Trust TV Certificate</button>
+<button onclick="adbTest()" style="background:radial-gradient(circle at 35% 35%,#1a2a1a,#0a1a0a);border:1px solid rgba(102,187,106,0.4);border-radius:6px;color:#66bb6a;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">ADB test</button>
         </div>
       </div>
   </div>
@@ -1554,6 +1555,19 @@
     const { AppLauncher } = Capacitor.Plugins;
     AppLauncher.openUrl({ url: 'https://play.google.com/store/apps/details?id=svarzee.android.apps.adb_mouse' });
     showToast('After installing, tap the mouse button again');
+  }
+
+  async function adbTest() {
+    try {
+      const A = Capacitor.Plugins.Adb;
+      if (!A) { alert('ADB plugin not found in this app'); return; }
+      showToast('Approve on the decoder screen if it asks…');
+      await A.connect({ host: localStorage.getItem('bridge_ip') });
+      const s = await A.shell({ command: 'echo hello' });
+      alert('ADB works: ' + JSON.stringify(s));
+    } catch (e) {
+      alert('ADB failed: ' + (e.message || e));
+    }
   }
 
   function trustTvCertificate() {
