@@ -1809,28 +1809,49 @@ function tvOff() {
     if (device === 'digi' && (!digiWs || digiWs.readyState !== WebSocket.OPEN)) connectDigi();
   }
 
-      function checkWifi() {
-    const bridgeIp = localStorage.getItem('bridge_ip') || '192.168.68.107';
-    const routerIp = bridgeIp.split('.').slice(0, 3).join('.') + '.1';
-    return fetch(`http://${routerIp}/favicon.ico`, { mode: 'no-cors', signal: AbortSignal.timeout(2000) })
-      .then(() => true).catch(() => false);
+      // Reachability check. The old version pinged "<saved subnet>.1", which doesn't
+  // exist on a phone hotspot and wrongly reported "no WiFi".
+  function checkWifi() {
+    return Promise.resolve(navigator.onLine !== false);
+  }
+
+  // Subnets to scan: your flat first, then common hotspot ranges.
+  // 192.168.43.x  = Android hotspot
+  // 172.20.10.x   = iPhone hotspot
+  // 192.168.137.x = Windows hotspot
+  const SCAN_SUBNETS = ['192.168.68.', '192.168.43.', '172.20.10.', '192.168.137.', '192.168.1.', '192.168.0.'];
+
+  function probeBridge(ip, timeout = 700) {
+    return new Promise(resolve => {
+      let ws = null, done = false, timer = null;
+      const finish = (result) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        try { ws && ws.close(); } catch (e) {}
+        resolve(result);
+      };
+      timer = setTimeout(() => finish(null), timeout);
+      try {
+        ws = new WebSocket(`ws://${ip}:8765`);
+        ws.onopen = () => finish(ip);
+        ws.onerror = () => finish(null);
+      } catch (e) { finish(null); }
+    });
   }
 
   async function findDecoder() {
-    // Derive subnet from bridge IP or current network
-const savedBridge = localStorage.getItem('bridge_ip') || '';
-const subnet = savedBridge ? savedBridge.split('.').slice(0,3).join('.') + '.' : '192.168.68.';
-    for (let i = 1; i <= 254; i++) {
-      const ip = subnet + i;
-      try {
-        const ws = new WebSocket(`ws://${ip}:8765`);
-        const found = await new Promise(resolve => {
-          ws.onopen = () => { ws.close(); resolve(ip); };
-          ws.onerror = () => resolve(null);
-          setTimeout(() => { try{ws.close();}catch(e){} resolve(null); }, 300);
-        });
-        if (found) return found;
-      } catch(e) {}
+    const saved = localStorage.getItem('bridge_ip') || '';
+    const savedSubnet = saved ? saved.split('.').slice(0, 3).join('.') + '.' : null;
+    const subnets = [...new Set([savedSubnet, ...SCAN_SUBNETS].filter(Boolean))];
+    for (const subnet of subnets) {
+      // probe 50 addresses at a time instead of one by one
+      for (let start = 1; start <= 254; start += 50) {
+        const batch = [];
+        for (let i = start; i < start + 50 && i <= 254; i++) batch.push(probeBridge(subnet + i));
+        const hit = (await Promise.all(batch)).find(Boolean);
+        if (hit) return hit;
+      }
     }
     return null;
   }
