@@ -546,6 +546,85 @@
 </style>
 </head>
 <body>
+<!-- network call-out: tap a dot to see the network state (symbols only) -->
+<style>
+  @keyframes dotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,83,80,.65); } 50% { box-shadow: 0 0 0 5px rgba(239,83,80,0); } }
+  .dot-pulse { animation: dotPulse 1.6s infinite; }
+</style>
+<script>
+(function () {
+  var GREEN = '#66bb6a', RED = '#ef5350';
+  function isDigiOn() { try { return !!(digiWs && digiWs.readyState === WebSocket.OPEN); } catch (e) { return false; } }
+  function isTvOn()   { try { return !!(ws && ws.readyState === WebSocket.OPEN && connected); } catch (e) { return false; } }
+
+  // what the phone is using: 'wifi' | 'cellular' | 'none' | null
+  function phoneNet() {
+    try {
+      var N = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Network;
+      if (N && N.getStatus) return N.getStatus().then(function (s) { return s.connectionType; }, function () { return null; });
+    } catch (e) {}
+    if (navigator.onLine === false) return Promise.resolve('none');
+    var c = navigator.connection;
+    return Promise.resolve(c && c.type ? c.type : null);
+  }
+
+  function svg(inner, c) { return '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="' + c + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' + inner + '</svg>'; }
+  function wifiIcon(c) { return svg('<path d="M5 12.55a11 11 0 0 1 14.08 0"/><path d="M1.42 9a16 16 0 0 1 21.16 0"/><path d="M8.53 16.11a6 6 0 0 1 6.95 0"/><circle cx="12" cy="20" r="1" fill="' + c + '"/>', c); }
+  function barsIcon(c) { return '<svg width="28" height="28" viewBox="0 0 24 24" fill="' + c + '" stroke="none"><rect x="3" y="15" width="3" height="6" rx="1"/><rect x="8" y="11" width="3" height="10" rx="1"/><rect x="13" y="7" width="3" height="14" rx="1"/><rect x="18" y="3" width="3" height="18" rx="1"/></svg>'; }
+  function noneIcon(c) { return svg('<circle cx="12" cy="12" r="9"/><line x1="5" y1="5" x2="19" y2="19"/>', c); }
+  function deviceIcon(kind, c) {
+    var body = kind === 'tv'
+      ? '<rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/>'
+      : '<rect x="2" y="8" width="20" height="9" rx="2"/><line x1="6" y1="12.5" x2="6.01" y2="12.5"/><line x1="10" y1="12.5" x2="10.01" y2="12.5"/><line x1="17" y1="12.5" x2="18" y2="12.5"/>';
+    return svg(body + '<line x1="3" y1="3" x2="21" y2="21" stroke-width="2.5"/>', c);   // slash through the device
+  }
+  function netIcon(type, c) { return type === 'cellular' ? barsIcon(c) : wifiIcon(c); }
+
+  function hide() { var o = document.getElementById('net-callout'); if (o) o.remove(); }
+  function show(anchor, html) {
+    hide();
+    var r = anchor.getBoundingClientRect();
+    var box = document.createElement('div');
+    box.id = 'net-callout';
+    box.style.cssText = 'position:fixed;z-index:99998;background:#23232a;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:10px 14px;box-shadow:0 8px 24px rgba(0,0,0,.6);';
+    box.innerHTML = '<div style="display:flex;align-items:center;gap:12px;">' + html + '</div>'
+      + '<div id="net-callout-tail" style="position:absolute;top:-6px;width:10px;height:10px;background:#23232a;border-left:1px solid rgba(255,255,255,.14);border-top:1px solid rgba(255,255,255,.14);transform:rotate(45deg);"></div>';
+    document.body.appendChild(box);
+    var bw = box.offsetWidth;
+    var left = Math.min(Math.max(8, r.left + r.width / 2 - bw / 2), window.innerWidth - bw - 8);
+    box.style.left = left + 'px';
+    box.style.top = (r.bottom + 10) + 'px';
+    document.getElementById('net-callout-tail').style.left = (r.left + r.width / 2 - left - 5) + 'px';
+    setTimeout(function () { document.addEventListener('click', hide, { once: true }); }, 0);
+    setTimeout(hide, 8000);
+  }
+
+  function wire() {
+    [['dot-tv', 'tv'], ['dot-digi', 'digi'], ['dot-bridge', 'digi']].forEach(function (x) {
+      var dot = document.getElementById(x[0]);
+      if (!dot || !dot.parentElement) return;
+      dot.parentElement.style.cursor = 'pointer';
+      dot.parentElement.addEventListener('click', function (e) {
+        e.stopPropagation();
+        phoneNet().then(function (type) {
+          var on = x[1] === 'tv' ? isTvOn() : isDigiOn();
+          if (type === 'none') { show(dot, noneIcon(RED)); return; }       // phone has no connection
+          if (on) show(dot, netIcon(type, GREEN));                          // connected: network symbol, green
+          else show(dot, netIcon(type, GREEN) + deviceIcon(x[1], RED));     // not connected: phone network + device crossed out
+        });
+      });
+    });
+    // a red dot pulses gently when the other device is connected
+    setInterval(function () {
+      var tv = isTvOn(), digi = isDigiOn();
+      var t = document.getElementById('dot-tv'), d = document.getElementById('dot-digi'), b = document.getElementById('dot-bridge');
+      if (t) t.classList.toggle('dot-pulse', !tv && digi);
+      [d, b].forEach(function (el) { if (el) el.classList.toggle('dot-pulse', !digi && tv); });
+    }, 1000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', wire); else wire();
+})();
+</script>
 <!-- pillow gradient + press effect for the D-pad arrow sectors -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
@@ -2021,6 +2100,30 @@ function tvOff() {
     { name: 'Home',    bridge: '192.168.68.107', tv: '192.168.68.100' },
     { name: 'Hotspot', bridge: '10.136.134.200',  tv: '10.136.134.201'   }
   ];
+  // ---- TV is found on its own: try every known TV address, use whichever answers ----
+  async function probeTv(ip, ms) {
+    try {
+      await fetch('http://' + ip + ':8001/api/v2/', { mode: 'no-cors', signal: AbortSignal.timeout(ms || 2500) });
+      return ip;
+    } catch (e) { return null; }
+  }
+
+  let _tvBusy = false;
+  async function findTV() {
+    if (_tvBusy) return;
+    _tvBusy = true;
+    try {
+      if (ws && ws.readyState === WebSocket.OPEN) return;   // already connected
+      const cands = [...new Set([TV_IP, localStorage.getItem('tv_ip'), ...NET_PROFILES.map(p => p.tv)].filter(Boolean))];
+      const hits = await Promise.all(cands.map(ip => probeTv(ip, 2500)));
+      const ip = hits.find(Boolean);
+      if (ip && ip !== TV_IP) { TV_IP = ip; localStorage.setItem('tv_ip', ip); }
+      if (ip && (!ws || ws.readyState > WebSocket.OPEN)) { manualDisconnect = false; connect(); }
+    } finally { _tvBusy = false; }
+  }
+  setTimeout(findTV, 1500);
+  setInterval(findTV, 10000);
+
   let _findBusy = null;
 
   // tries both known networks at once (about 2 seconds); only one search runs at a time
@@ -2031,7 +2134,7 @@ function tvOff() {
       const i = hits.findIndex(Boolean);
       if (i >= 0) {
         const p = NET_PROFILES[i];
-        localStorage.setItem('tv_ip', p.tv);
+        if (TV_IP !== p.tv) { TV_IP = p.tv; manualDisconnect = false; connect(); }
         if (TV_IP !== p.tv) { TV_IP = p.tv; manualDisconnect = false; connect(); }
         return p.bridge;
       }
