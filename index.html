@@ -635,7 +635,10 @@ function makeAdbLink(ip) {
       if (link.readyState !== 1) { clearInterval(t); return; }
       sh('echo 1').catch(function () { clearInterval(t); drop(); });
     }, 15000);
-  }).catch(function () { if (link.readyState === 0) { fire('error', {}); drop(); } });
+  }).catch(function (e) {
+    if (!window._adbAlerted) { window._adbAlerted = true; alert('ADB link failed: ' + (e && e.message || e)); }
+    if (link.readyState === 0) { fire('error', {}); drop(); }
+  });
   return link;
 }
 </script>
@@ -2202,6 +2205,9 @@ function tvOff() {
   const SCAN_SUBNETS = ['192.168.68.', '10.136.134.', '192.168.43.', '172.20.10.', '192.168.137.', '192.168.1.', '192.168.0.'];
 
   function probeBridge(ip, timeout = 2000) {
+    // inside the Android app: test the decoder's ADB port directly (no bridge needed)
+    const A = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Adb;
+    if (A && A.probe) return A.probe({ host: ip, port: 5555, timeout: timeout }).then(r => (r && r.open ? ip : null), () => null);
     return new Promise(resolve => {
       let ws = null, done = false, timer = null;
       const finish = (result) => {
@@ -2296,7 +2302,7 @@ function tvOff() {
     }
     updateWifiIcon('digi-status-dot', 'connecting');
     const bridgeUrl = 'ws://' + savedBridge + ':8765';
-    digiWs = (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Adb) ? makeAdbLink(savedBridge) : new WebSocket(bridgeUrl);
+    digiWs = (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Adb) ? (function () { try { return makeAdbLink(savedBridge); } catch (e) { alert('ADB link error: ' + e.message); return new WebSocket(bridgeUrl); } })() : new WebSocket(bridgeUrl);
     const connectingWs = digiWs;
     setTimeout(() => { if (connectingWs.readyState === WebSocket.CONNECTING) connectingWs.close(); }, (String(connectingWs.url).indexOf('adb://') === 0 ? 30000 : 3000));
     digiWs.onopen = () => {
