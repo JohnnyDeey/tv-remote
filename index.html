@@ -642,6 +642,32 @@ function makeAdbLink(ip) {
   return link;
 }
 </script>
+<!-- records each TV connection so we can see why the TV asks for permission -->
+<script>
+(function () {
+  var Native = window.WebSocket;
+  function note(o) { try { var a = JSON.parse(localStorage.getItem('pair_log') || '[]'); a.push(o); localStorage.setItem('pair_log', JSON.stringify(a.slice(-12))); } catch (e) {} }
+  window.WebSocket = function (url, p) {
+    var ws = p ? new Native(url, p) : new Native(url);
+    var u = String(url);
+    if (u.indexOf(':8002') > -1) {
+      var t0 = Date.now(), host = (u.match(/wss:\/\/([^:\/]+)/) || [])[1], tk = (u.match(/token=([^&]+)/) || [])[1];
+      var rec = { t: new Date().toLocaleTimeString('en-GB'), tv: host, sent: tk ? tk.slice(0, 4) : 'none' };
+      ws.addEventListener('message', function (ev) {
+        try { var d = JSON.parse(ev.data); if (!rec.ev) { rec.ev = d.event; rec.ms = Date.now() - t0; if (d.data && d.data.token) rec.got = String(d.data.token).slice(0, 4); note(rec); } } catch (e) {}
+      });
+      ws.addEventListener('error', function () { if (!rec.ev) { rec.ev = 'error'; rec.ms = Date.now() - t0; note(rec); } });
+    }
+    return ws;
+  };
+  window.WebSocket.prototype = Native.prototype;
+  ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'].forEach(function (k) { window.WebSocket[k] = Native[k]; });
+})();
+function showPairLog() {
+  var a = JSON.parse(localStorage.getItem('pair_log') || '[]');
+  alert(a.length ? a.map(function (r) { return r.t + '  ' + r.tv + '  sent=' + r.sent + '  ' + r.ev + '  ' + (r.ms || 0) + 'ms' + (r.got ? '  new=' + r.got : ''); }).join('\n') : 'No TV connections recorded yet');
+}
+</script>
 <!-- device naming -->
 <script>
   function saveDeviceName(v) {
@@ -843,6 +869,7 @@ function makeAdbLink(ip) {
           <button onclick="checkAndUpdate()" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#f0f0f0;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">Check Updates</button>
 <button onclick="trustTvCertificate()" style="background:radial-gradient(circle at 35% 35%,#1a2a1a,#0a1a0a);border:1px solid rgba(79,195,247,0.3);border-radius:6px;color:#4fc3f7;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">🔐 Trust TV Certificate</button>
 <button onclick="adbTest()" style="background:radial-gradient(circle at 35% 35%,#1a2a1a,#0a1a0a);border:1px solid rgba(102,187,106,0.4);border-radius:6px;color:#66bb6a;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">ADB test</button>
+<button onclick="showPairLog()" style="background:radial-gradient(circle at 35% 35%,#2a2a1a,#1a1a0a);border:1px solid rgba(255,202,40,0.4);border-radius:6px;color:#ffca28;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">Pairing log</button>
         </div>
       </div>
   </div>
