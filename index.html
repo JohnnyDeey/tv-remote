@@ -580,6 +580,187 @@
 .section button[onclick*="3201606009684"] { --c1:#3fe27e; --c2:#14953f; --c3:#0a5724; }  /* Spotify */
 .section button[onclick*="3201511006428"] { --c1:#e03030; --c2:#8f0000; --c3:#560000; }  /* Rakuten */
 </style>
+<!-- glass buttons with gold icons -->
+<style>
+.btn {
+  background: radial-gradient(circle at 50% 16%, #4d5278 0%, #262a47 48%, #12152a 100%) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  border-radius: 24px !important;
+  color: #f2b84b !important;
+  box-shadow:
+    0 0 0 2px rgba(8,10,24,.9),
+    0 9px 14px rgba(0,0,0,.55),
+    inset 0 1px 2px rgba(255,255,255,.25),
+    inset 0 -3px 5px rgba(0,0,0,.35) !important;
+  transition: transform .08s, box-shadow .08s;
+}
+.btn::before {
+  content: ""; position: absolute; left: 10%; right: 10%; top: 6%; height: 34%;
+  border-radius: 50% 50% 60% 60% / 80% 80% 40% 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,0));
+  pointer-events: none;
+}
+.btn .icon { color: #f6c35a !important; text-shadow: 0 0 7px rgba(246,195,90,.5); position: relative; z-index: 1; }
+.btn.power, .btn.power .icon { color: #ff7a66 !important; text-shadow: 0 0 7px rgba(255,122,102,.5); }
+.btn:active {
+  transform: scale(.94) !important;
+  background: radial-gradient(circle at 50% 16%, #3a3e5e 0%, #1c1f38 50%, #0d0f1f 100%) !important;
+  box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 3px 6px rgba(0,0,0,.5), inset 0 2px 3px rgba(255,255,255,.2), inset 0 -6px 10px rgba(0,0,0,.5) !important;
+}
+</style>
+<!-- glass style for VOL / CH rockers and the D-pad -->
+<style>
+.vc-group {
+  background: radial-gradient(circle at 50% 12%, #4d5278 0%, #262a47 50%, #12152a 100%) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 7px 12px rgba(0,0,0,.55),
+              inset 0 1px 2px rgba(255,255,255,.25), inset 0 -3px 5px rgba(0,0,0,.35) !important;
+}
+.vc-label { color: #b9a56a !important; }
+.vc-btn, .vc-mid { color: #f6c35a !important; text-shadow: 0 0 7px rgba(246,195,90,.45); }
+.vc-mid svg { stroke: #f6c35a !important; }
+
+/* D-pad sectors: glass gradient, gold arrows, softer depth */
+svg radialGradient stop:first-child { stop-color: #4d5278 !important; }
+svg radialGradient stop:last-child { stop-color: #12152a !important; }
+svg path[fill="white"] { fill: #f6c35a !important; opacity: 1 !important; }
+svg[viewBox="90 90 320 320"] { filter: drop-shadow(0 4px 0 #05060f) drop-shadow(0 8px 12px rgba(0,0,0,.6)) !important; }
+svg circle[stroke="#4fc3f7"] { fill: #1c2040 !important; stroke: #f2b84b !important; }
+svg text[fill="#4fc3f7"] { fill: #f6c35a !important; }
+</style>
+<!-- VOL / CH: three separate glass buttons per rocker -->
+<style>
+.vc-group {
+  background: none !important; border: none !important; box-shadow: none !important;
+  display: flex; flex-direction: column; gap: 9px; padding: 0 3px;
+}
+.vc-btn, .vc-mid {
+  position: relative;
+  background: radial-gradient(circle at 50% 16%, #4d5278 0%, #262a47 48%, #12152a 100%) !important;
+  border: 1px solid rgba(255,255,255,.14) !important;
+  border-radius: 22px !important;
+  box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 7px 11px rgba(0,0,0,.55),
+              inset 0 1px 2px rgba(255,255,255,.25), inset 0 -3px 5px rgba(0,0,0,.35) !important;
+  padding: 13px 6px !important;
+  transition: transform .08s, box-shadow .08s;
+}
+.vc-btn::before, .vc-mid::before {
+  content: ""; position: absolute; left: 12%; right: 12%; top: 6%; height: 34%;
+  border-radius: 50% 50% 60% 60% / 80% 80% 40% 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,0));
+  pointer-events: none;
+}
+.vc-btn:active, .vc-mid:active {
+  transform: scale(.94);
+  background: radial-gradient(circle at 50% 16%, #3a3e5e 0%, #1c1f38 50%, #0d0f1f 100%) !important;
+}
+.vc-label { padding: 2px 0 !important; }
+</style>
+<!-- fixes: ghost panel, equal rocker buttons, clean OK -->
+<style>
+.vc-group::before, .vc-group::after, .vol-ch::before, .vol-ch::after { display: none !important; content: none !important; }
+.vol-ch { background: none !important; box-shadow: none !important; border: none !important; }
+.vc-label { background: none !important; border: none !important; box-shadow: none !important; }
+.vc-btn, .vc-mid {
+  display: flex !important; align-items: center; justify-content: center;
+  width: 100%; box-sizing: border-box; height: 52px; padding: 0 !important;
+  border-top: 1px solid rgba(255,255,255,.14) !important; border-bottom: 1px solid rgba(255,255,255,.14) !important;
+}
+.vc-btn { font-size: 22px !important; }
+
+/* OK button: flat glass disc, gold ring, no highlight blotch */
+svg[viewBox="90 90 320 320"] ellipse { display: none !important; }
+svg[viewBox="90 90 320 320"] circle {
+  fill: #242952 !important; fill-opacity: 1 !important;
+  stroke: #f2b84b !important; stroke-width: 3 !important;
+  filter: drop-shadow(0 0 5px rgba(246,195,90,.45));
+}
+svg[viewBox="90 90 320 320"] text { fill: #f6c35a !important; }
+</style>
+<style>
+svg[viewBox="90 90 320 320"] { filter: drop-shadow(0 4px 0 #05060f) drop-shadow(0 9px 12px rgba(0,0,0,.6)) !important; }
+svg[viewBox="90 90 320 320"] path[fill="white"] { fill: #f6c35a !important; opacity: 1 !important; filter: drop-shadow(0 0 4px rgba(246,195,90,.6)); }
+svg[viewBox="90 90 320 320"] circle.dp-ok0 { fill: url(#dp-o0) !important; stroke: #f2b84b !important; stroke-width: 3 !important; filter: drop-shadow(0 0 5px rgba(246,195,90,.4)); }
+svg[viewBox="90 90 320 320"] circle.dp-ok1 { fill: url(#dp-o1) !important; stroke: #f2b84b !important; stroke-width: 3 !important; filter: drop-shadow(0 0 5px rgba(246,195,90,.4)); }
+svg[viewBox="90 90 320 320"] circle.dp-ring { fill: none !important; stroke: #080a18 !important; stroke-width: 7 !important; filter: none !important; }
+svg[viewBox="90 90 320 320"] ellipse.dp-gl { display: inline !important; }
+</style>
+<style>
+div:has(> svg[viewBox="90 90 320 320"]) { max-width: 192px !important; max-height: 192px !important; }
+svg[viewBox="90 90 320 320"] { filter: drop-shadow(0 7px 0 #05060f) drop-shadow(0 13px 14px rgba(0,0,0,.6)) !important; }
+</style>
+<style>
+/* Samsung TV / DIGI Decoder switch */
+#btn-samsung, #btn-digi {
+  position: relative; overflow: hidden; padding: 12px !important;
+  border: 1px solid rgba(255,255,255,.14) !important; border-radius: 22px !important;
+  background: radial-gradient(circle at 50% 16%, #4d5278 0%, #262a47 48%, #12152a 100%) !important;
+  color: #b9a56a !important;
+  box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 7px 11px rgba(0,0,0,.55), inset 0 1px 2px rgba(255,255,255,.25), inset 0 -3px 5px rgba(0,0,0,.35) !important;
+  transition: transform .08s, box-shadow .08s;
+}
+#btn-samsung::before, #btn-digi::before {
+  content: ""; position: absolute; left: 10%; right: 10%; top: 6%; height: 34%;
+  border-radius: 50% 50% 60% 60% / 80% 80% 40% 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,0)); pointer-events: none;
+}
+#btn-samsung[style*="2px solid"], #btn-digi[style*="2px solid"] {
+  color: #f6c35a !important; border-color: #f2b84b !important;
+  box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 0 12px rgba(246,195,90,.45), 0 7px 11px rgba(0,0,0,.55), inset 0 1px 2px rgba(255,255,255,.3), inset 0 -3px 5px rgba(0,0,0,.35) !important;
+}
+
+/* press effect (class set by the script below) */
+.btn.pressed, .vc-btn.pressed, .vc-mid.pressed, #btn-samsung.pressed, #btn-digi.pressed {
+  transform: scale(.94) !important;
+  background: radial-gradient(circle at 50% 16%, #3a3e5e 0%, #1c1f38 50%, #0d0f1f 100%) !important;
+  box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 3px 6px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.5) !important;
+}
+svg[viewBox="90 90 320 320"] path.pressed { transform: translateY(4px); filter: brightness(.75); }
+.dp-sec0 { fill: url(#dp-s0) !important; }
+.dp-sec1 { fill: url(#dp-s1) !important; }
+</style>
+<style>
+.set-btn {
+  position: relative; overflow: hidden;
+  background: radial-gradient(circle at 50% 16%, #4d5278 0%, #262a47 48%, #12152a 100%) !important;
+  border: 1px solid rgba(255,255,255,.14) !important; border-radius: 16px !important;
+  color: #f6c35a !important; font-weight: 700;
+  box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 6px 10px rgba(0,0,0,.5), inset 0 1px 2px rgba(255,255,255,.25), inset 0 -3px 5px rgba(0,0,0,.35) !important;
+  transition: transform .08s, box-shadow .08s;
+}
+.set-btn::before {
+  content: ""; position: absolute; left: 10%; right: 10%; top: 6%; height: 34%;
+  border-radius: 50% 50% 60% 60% / 80% 80% 40% 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,0)); pointer-events: none;
+}
+.set-btn:active {
+  transform: scale(.94);
+  background: radial-gradient(circle at 50% 16%, #3a3e5e 0%, #1c1f38 50%, #0d0f1f 100%) !important;
+  box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 3px 5px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.5) !important;
+}
+</style>
+<style>
+.kb-enter {
+  position: relative; overflow: hidden;
+  background: radial-gradient(circle at 50% 16%, #4d5278 0%, #262a47 48%, #12152a 100%) !important;
+  border: 1px solid rgba(255,255,255,.14) !important; border-radius: 18px !important;
+  color: #f6c35a !important;
+  box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 6px 10px rgba(0,0,0,.5), inset 0 1px 2px rgba(255,255,255,.25), inset 0 -3px 5px rgba(0,0,0,.35) !important;
+  transition: transform .08s, box-shadow .08s;
+}
+.kb-enter::before {
+  content: ""; position: absolute; left: 10%; right: 10%; top: 6%; height: 34%;
+  border-radius: 50% 50% 60% 60% / 80% 80% 40% 40%;
+  background: linear-gradient(180deg, rgba(255,255,255,.2), rgba(255,255,255,0)); pointer-events: none;
+}
+.kb-enter svg { stroke: #f6c35a !important; position: relative; z-index: 1; filter: drop-shadow(0 0 4px rgba(246,195,90,.5)); }
+.kb-enter:active, .kb-enter.pressed {
+  transform: scale(.94);
+  background: radial-gradient(circle at 50% 16%, #3a3e5e 0%, #1c1f38 50%, #0d0f1f 100%) !important;
+  box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 3px 5px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.5) !important;
+}
+</style>
 </head>
 <body>
 <!-- decoder link through the native ADB plugin (replaces the Termux bridge inside the Android app) -->
@@ -3618,6 +3799,84 @@ function tvOff() {
     ]
   };
 
+</script>
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  document.querySelectorAll('svg[viewBox="90 90 320 320"]').forEach(function (svg, i) {
+    var sid = 'dp-s' + i, oid = 'dp-o' + i, gid = 'dp-g' + i;
+    var defs = document.createElementNS(NS, 'defs');
+    defs.innerHTML =
+      '<linearGradient id="' + sid + '" gradientUnits="userSpaceOnUse" x1="130" y1="100" x2="370" y2="400"><stop offset="0" stop-color="#5d6490"/><stop offset=".5" stop-color="#2b3052"/><stop offset="1" stop-color="#11142a"/></linearGradient>' +
+      '<linearGradient id="' + oid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b6296"/><stop offset=".6" stop-color="#2a2f57"/><stop offset="1" stop-color="#14172e"/></linearGradient>' +
+      '<linearGradient id="' + gid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".4"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>';
+    svg.insertBefore(defs, svg.firstChild);
+    svg.querySelectorAll('path[fill^="url("]').forEach(function (p) {
+      p.setAttribute('fill', 'url(#' + sid + ')'); p.setAttribute('stroke', '#080a18'); p.setAttribute('stroke-width', '2.5');
+    });
+    var ok = svg.querySelector('circle'); if (!ok) return;
+    ok.setAttribute('class', 'dp-ok' + i);
+    var ring = document.createElementNS(NS, 'circle');
+    ring.setAttribute('class', 'dp-ring');
+    ring.setAttribute('cx', '248'); ring.setAttribute('cy', '242'); ring.setAttribute('r', '79'); ring.setAttribute('pointer-events', 'none');
+    ok.parentNode.insertBefore(ring, ok);
+    var gl = document.createElementNS(NS, 'ellipse');
+    gl.setAttribute('class', 'dp-gl');
+    gl.setAttribute('cx', '248'); gl.setAttribute('cy', '208'); gl.setAttribute('rx', '48'); gl.setAttribute('ry', '28');
+    gl.setAttribute('fill', 'url(#' + gid + ')'); gl.setAttribute('pointer-events', 'none');
+    ok.parentNode.insertBefore(gl, ok.nextSibling);
+    var tx = svg.querySelector('text'); if (tx) tx.setAttribute('fill', '#f6c35a');
+  });
+})();
+</script>
+<script>
+(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  document.querySelectorAll('svg[viewBox="90 90 320 320"]').forEach(function (svg, i) {
+    var gid = 'dp-top' + i;
+    var defs = svg.querySelector('defs');
+    var g = document.createElementNS(NS, 'linearGradient');
+    g.setAttribute('id', gid); g.setAttribute('gradientUnits', 'userSpaceOnUse');
+    g.setAttribute('x1', '0'); g.setAttribute('y1', '90'); g.setAttribute('x2', '0'); g.setAttribute('y2', '300');
+    g.innerHTML = '<stop offset="0" stop-color="#fff" stop-opacity=".30"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>';
+    defs.appendChild(g);
+    svg.querySelectorAll('path[fill^="url(#dp-s"]').forEach(function (p) {
+      var c = p.cloneNode(false);
+      ['onmousedown', 'onmouseup', 'onmouseleave', 'ontouchstart', 'ontouchend'].forEach(function (a) { c.removeAttribute(a); });
+      c.setAttribute('fill', 'url(#' + gid + ')'); c.setAttribute('stroke', 'none');
+      c.setAttribute('pointer-events', 'none'); c.removeAttribute('style');
+      p.parentNode.insertBefore(c, p.nextSibling);
+    });
+  });
+})();
+</script>
+<script>
+(function () {
+  document.querySelectorAll('svg[viewBox="90 90 320 320"]').forEach(function (svg, i) {
+    svg.querySelectorAll('path[stroke="#080a18"]').forEach(function (p) { p.classList.add('dp-sec' + i); });
+  });
+  var downEls = [];
+  document.addEventListener('pointerdown', function (e) {
+    var b = e.target.closest('.btn, .vc-btn, .vc-mid, #btn-samsung, #btn-digi');
+    if (b) { b.classList.add('pressed'); downEls.push(b); return; }
+    var p = e.target.closest && e.target.closest('path.dp-sec0, path.dp-sec1');
+    if (p) {
+      var g = p.nextElementSibling, a = g && g.nextElementSibling;
+      [p, g, a].forEach(function (x) { if (x) { x.classList.add('pressed'); downEls.push(x); } });
+    }
+  }, true);
+  function up() { downEls.forEach(function (x) { x.classList.remove('pressed'); }); downEls = []; }
+  ['pointerup', 'pointercancel', 'dragend'].forEach(function (ev) { document.addEventListener(ev, up, true); });
+})();
+</script>
+<script>
+(function () {
+  ['digi-text-input', 'tv-text-input'].forEach(function (id) {
+    var inp = document.getElementById(id); if (!inp) return;
+    var row = inp.parentElement && inp.parentElement.parentElement; if (!row) return;
+    row.querySelectorAll(':scope > button').forEach(function (b) { b.classList.add('kb-enter'); });
+  });
+})();
 </script>
 </body>
 </html>
