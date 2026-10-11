@@ -765,7 +765,7 @@ window.addEventListener('load', function () {
     $('tm-list').innerHTML = list.map(function (a) {
       return '<div class="tm-row"><div class="tm-main"><div class="tm-name">' + esc(a.name) + '</div><div class="tm-pkg">' + esc(a.pkg) + '</div>' +
         '<div class="tm-bar"><i style="width:' + (100 * a.mb / max) + '%"></i></div></div>' +
-        '<div class="tm-side"><span class="tm-st ' + a.status + '">' + SHORT[a.status] + '</span><span class="tm-mb">' + a.mb.toFixed(1) + ' MB</span></div>' +
+        '<div class="tm-side"><span class="tm-st ' + a.status + '">' + SHORT[a.status] + '</span><span class="tm-mb">' + a.mb.toFixed(1) + ' MB &middot; ' + (d.total ? (100 * a.mb / d.total).toFixed(1) : '0.0') + '%</span></div>' +
         '<button class="tm-end" data-pkg="' + esc(a.pkg) + '"' + (a.system ? ' disabled' : '') + '>End task</button></div>';
     }).join('') || '<div class="tm-empty">Nothing to show</div>';
   }
@@ -856,7 +856,7 @@ async function wakeTv() {
     var has = await ir.hasIrBlaster();
     if (!has.available) { showPowerToast(); return; }
     // a TV that still answers on the network is awake or in a light standby: don't toggle it off by mistake
-    var up = await probeTv(TV_IP, 1500);
+    var up = false;
     if (up) { showToast('The TV is on the network, try again in a moment'); return; }
     await ir.powerToggle();      // the same code the physical remote sends
     showToast('Waking the TV...');
@@ -2261,7 +2261,7 @@ function tvOff() {
     setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, 4000);
   }
 
-    function tvOn() {
+    function tvOn() { wakeTv(); return;
     if (connected) return;
     const testWs = new WebSocket(`wss://${TV_IP}:8002/api/v2/channels/samsung.remote.control?name=${APP_NAME}&token=${token}`);
     testWs.onmessage = (e) => {
@@ -2284,7 +2284,7 @@ function tvOff() {
     };
   }
 
-  function tvPower() { if (connected) tvOff(); else tvOn(); }
+  function tvPower() { wakeTv(); }
   let _digiPowerState = 'unknown';
   function digiOff() {
     if (_digiPowerState === 'off') return;
