@@ -668,6 +668,185 @@ function showPairLog() {
   alert(a.length ? a.map(function (r) { return r.t + '  ' + r.tv + '  sent=' + r.sent + '  ' + r.ev + '  ' + (r.ms || 0) + 'ms' + (r.got ? '  new=' + r.got : ''); }).join('\n') : 'No TV connections recorded yet');
 }
 </script>
+<!-- settings panel helpers -->
+<script>
+function fillSettings() {
+  var n = document.getElementById('device-name-input'); if (n) n.value = localStorage.getItem('device_name') || '';
+  try {
+    NET_PROFILES.forEach(function (p, i) {
+      var b = document.getElementById('np' + i + '-bridge'), t = document.getElementById('np' + i + '-tv');
+      if (b) b.value = p.bridge; if (t) t.value = p.tv;
+    });
+  } catch (e) {}
+  var link = document.getElementById('set-link');
+  if (link) link.textContent = (window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Adb) ? 'Link: direct (ADB), no bridge needed' : 'Link: bridge (normal browser)';
+}
+function saveProfiles() {
+  var ok = /^\d{1,3}(\.\d{1,3}){3}$/, list = [];
+  for (var i = 0; i < NET_PROFILES.length; i++) {
+    var b = document.getElementById('np' + i + '-bridge').value.trim(), t = document.getElementById('np' + i + '-tv').value.trim();
+    if (!ok.test(b) || !ok.test(t)) { showToast('Check the addresses in ' + NET_PROFILES[i].name); return; }
+    list.push({ bridge: b, tv: t });
+  }
+  list.forEach(function (p, i) { NET_PROFILES[i].bridge = p.bridge; NET_PROFILES[i].tv = p.tv; });
+  localStorage.setItem('net_profiles', JSON.stringify(list));
+  showToast('Networks saved');
+}
+window.addEventListener('load', function () {
+  try {   // use the networks you saved, if any
+    var s = JSON.parse(localStorage.getItem('net_profiles') || 'null');
+    if (s) s.forEach(function (p, i) { if (NET_PROFILES[i]) { NET_PROFILES[i].bridge = p.bridge; NET_PROFILES[i].tv = p.tv; } });
+  } catch (e) {}
+  var orig = window.showSettings;
+  if (typeof orig === 'function') window.showSettings = function () { orig(); fillSettings(); };
+  setInterval(function () {   // the dots in Settings follow the dots at the top
+    [['dot-tv', 'set-dot-tv'], ['dot-digi', 'set-dot-digi']].forEach(function (x) {
+      var a = document.getElementById(x[0]), b = document.getElementById(x[1]);
+      if (a && b) b.style.background = a.style.background;
+    });
+  }, 1000);
+});
+</script>
+<!-- in-app task manager: lists the apps on the decoder, with End task -->
+<script>
+(function () {
+  var PROTECTED = ['system', 'android', 'com.android.', 'com.google.android.gms', 'com.google.android.tvlauncher', 'com.google.android.inputmethod', 'com.google.android.webview', 'com.google.android.katniss', 'com.google.android.backdrop', 'com.google.android.tv.', 'com.mediatek', 'com.ita.livetv'];
+  var SHORT = { Foreground: 'FG', Open: 'OPEN', Background: 'BG', System: 'SYS' };
+  var state = { timer: null, busy: false, data: null, meta: { t: 0, d: {} } };
+  var filters = { Foreground: 1, Open: 1, Background: 1, System: 0 };
+  try { filters = JSON.parse(localStorage.getItem('tm_filters') || 'null') || filters; } catch (e) {}
+
+  function plugin() { return window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Adb; }
+  function sh(c) { return plugin().shell({ command: c }).then(function (r) { return r.output || ''; }); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]; }); }
+  function isProtected(pkg) { return PROTECTED.some(function (p) { return pkg.indexOf(p) === 0; }); }
+  function $(id) { return document.getElementById(id); }
+
+  async function readMeta() {
+    if (Date.now() - state.meta.t > 60000) {
+      try { state.meta.d = JSON.parse((await sh('cat /sdcard/app_meta.json 2>/dev/null')) || '{}'); } catch (e) { state.meta.d = {}; }
+      state.meta.t = Date.now();
+    }
+    return state.meta.d;
+  }
+
+  async function snapshot() {
+    var mem = await sh("dumpsys meminfo | sed -n '/Total PSS by process:/,/Total PSS by OOM adjustment:/p'");
+    var fgOut = await sh('dumpsys activity activities | grep ResumedActivity');
+    var info = await sh('head -3 /proc/meminfo');
+    var meta = await readMeta();
+    var fgm = fgOut.match(/ResumedActivity: ActivityRecord\{\S+ u\d+ ([\w.]+)\//);
+    var fg = fgm ? fgm[1] : null;
+    var apps = {}, re = /^\s*([\d,]+)K:\s+(\S+)\s+\(pid\s+(\d+)(.*?)\)/;
+    mem.split('\n').forEach(function (line) {
+      var m = line.match(re); if (!m) return;
+      var pkg = m[2].split(':')[0];
+      var a = apps[pkg] || (apps[pkg] = { pkg: pkg, mb: 0, procs: 0, visible: false });
+      a.mb += parseInt(m[1].replace(/,/g, ''), 10) / 1024; a.procs++;
+      if (m[4].indexOf('activities') > -1) a.visible = true;
+    });
+    var rows = Object.keys(apps).map(function (k) {
+      var a = apps[k], sys = isProtected(a.pkg);
+      var status = sys ? 'System' : (a.pkg === fg ? 'Foreground' : (a.visible ? 'Open' : 'Background'));
+      var name = (meta[a.pkg] && meta[a.pkg].name) || a.pkg.split('.').pop().replace(/_/g, ' ');
+      return { pkg: a.pkg, name: name, mb: Math.round(a.mb * 10) / 10, procs: a.procs, status: status, system: sys };
+    }).sort(function (x, y) { return y.mb - x.mb; });
+    var tot = info.match(/MemTotal:\s+(\d+)/), av = info.match(/MemAvailable:\s+(\d+)/);
+    return { total: tot ? Math.round(tot[1] / 1024) : 0, free: av ? Math.round(av[1] / 1024) : 0, apps: rows };
+  }
+
+  function render() {
+    var d = state.data; if (!d || !$('tm-list')) return;
+    $('tm-free').textContent = 'Memory free: ' + d.free + ' MB of ' + d.total + ' MB';
+    $('tm-freebar').style.width = (d.total ? 100 * d.free / d.total : 0) + '%';
+    var q = ($('tm-q').value || '').trim().toLowerCase();
+    var list = d.apps.filter(function (a) { return filters[a.status] && (!q || (a.name + ' ' + a.pkg).toLowerCase().indexOf(q) > -1); });
+    var max = Math.max.apply(null, [1].concat(list.map(function (a) { return a.mb; })));
+    $('tm-list').innerHTML = list.map(function (a) {
+      return '<div class="tm-row"><div class="tm-main"><div class="tm-name">' + esc(a.name) + '</div><div class="tm-pkg">' + esc(a.pkg) + '</div>' +
+        '<div class="tm-bar"><i style="width:' + (100 * a.mb / max) + '%"></i></div></div>' +
+        '<div class="tm-side"><span class="tm-st ' + a.status + '">' + SHORT[a.status] + '</span><span class="tm-mb">' + a.mb.toFixed(1) + ' MB</span></div>' +
+        '<button class="tm-end" data-pkg="' + esc(a.pkg) + '"' + (a.system ? ' disabled' : '') + '>End task</button></div>';
+    }).join('') || '<div class="tm-empty">Nothing to show</div>';
+  }
+
+  async function refresh() {
+    if (state.busy || !$('tm-overlay')) return;
+    state.busy = true;
+    try { state.data = await snapshot(); $('tm-msg').textContent = ''; render(); }
+    catch (e) { if ($('tm-msg')) $('tm-msg').textContent = 'Could not read the decoder. Is it connected?'; }
+    state.busy = false;
+  }
+
+  async function endTask(pkg) {
+    if (!/^[A-Za-z0-9_.]+$/.test(pkg)) return;
+    try { await sh('am force-stop ' + pkg); } catch (e) {}
+    await refresh();
+  }
+
+  function close() { clearInterval(state.timer); var o = $('tm-overlay'); if (o) o.remove(); }
+
+  window.openTaskManager = function () {
+    if (!plugin()) { showToast('The task manager works in the Android app only'); return; }
+    if ($('tm-overlay')) return;
+    var o = document.createElement('div');
+    o.id = 'tm-overlay';
+    o.style.cssText = 'position:fixed;inset:0;z-index:100001;background:#0a0a0a;color:#eceef3;display:flex;flex-direction:column;font-family:system-ui,sans-serif;';
+    o.innerHTML =
+      '<style>' +
+      '#tm-overlay *{box-sizing:border-box}' +
+      '.tm-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;background:#17181e;border-bottom:1px solid #2a2c35;font-size:16px}' +
+      '.tm-head button{background:none;border:none;color:#8b8f9c;font-size:22px}' +
+      '.tm-mem{padding:10px 16px;font-size:12px;color:#8b8f9c}' +
+      '.tm-bar{height:5px;background:#2a2c35;border-radius:3px;overflow:hidden;margin-top:6px}.tm-bar i{display:block;height:100%;background:#4fc3f7}' +
+      '.tm-tools{padding:0 16px 8px;display:flex;flex-direction:column;gap:8px}' +
+      '#tm-q{background:#17181e;border:1px solid #2a2c35;border-radius:10px;color:#eceef3;padding:10px 12px;font-size:14px;outline:none;width:100%}' +
+      '.tm-chips{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:#8b8f9c}' +
+      '.tm-actions{padding:0 16px 10px;display:flex;gap:8px}' +
+      '.tm-actions button{flex:1;background:#262833;border:1px solid #2a2c35;border-radius:10px;color:#eceef3;padding:9px;font-weight:700;font-size:13px}' +
+      '#tm-list{flex:1;overflow-y:auto;padding:0 12px 24px}' +
+      '.tm-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;background:#17181e;border:1px solid #2a2c35;border-radius:12px;padding:10px 12px;margin-bottom:8px}' +
+      '.tm-main{min-width:0}.tm-name{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.tm-pkg{font-size:11px;color:#8b8f9c;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      '.tm-side{display:flex;flex-direction:column;align-items:flex-end;gap:4px}' +
+      '.tm-mb{font-size:12px;white-space:nowrap}' +
+      '.tm-st{font-size:11px;padding:1px 8px;border-radius:999px;border:1px solid #2a2c35;white-space:nowrap}' +
+      '.tm-st.Foreground{color:#66bb6a;border-color:#2f5a33}.tm-st.Open{color:#4fc3f7;border-color:#245a73}.tm-st.System{color:#8b8f9c}' +
+      '.tm-end{background:#2a1a1a;border:1px solid #5a2a2a;border-radius:8px;color:#ef5350;font-weight:700;font-size:12px;padding:8px 10px}' +
+      '.tm-end:disabled{opacity:.3}.tm-empty,#tm-msg{padding:16px;text-align:center;color:#8b8f9c;font-size:13px}' +
+      '</style>' +
+      '<div class="tm-head"><b>📊 Task manager</b><button id="tm-close">✕</button></div>' +
+      '<div class="tm-mem"><span id="tm-free">Reading the decoder…</span><div class="tm-bar"><i id="tm-freebar" style="width:0"></i></div></div>' +
+      '<div class="tm-tools"><input id="tm-q" type="text" placeholder="Search apps…">' +
+      '<div class="tm-chips">' +
+      ['Foreground', 'Open', 'Background', 'System'].map(function (f) {
+        return '<label><input type="checkbox" data-f="' + f + '"' + (filters[f] ? ' checked' : '') + '> ' + (f === 'Foreground' ? 'FG' : f === 'Background' ? 'BG' : f) + '</label>';
+      }).join('') + '</div></div>' +
+      '<div class="tm-actions"><button id="tm-bg">End all BG</button><button id="tm-ref">Refresh</button></div>' +
+      '<div id="tm-list"></div><div id="tm-msg"></div>';
+    document.body.appendChild(o);
+    $('tm-close').onclick = close;
+    $('tm-ref').onclick = refresh;
+    $('tm-q').oninput = render;
+    o.querySelectorAll('[data-f]').forEach(function (c) {
+      c.onchange = function () { filters[c.dataset.f] = c.checked ? 1 : 0; try { localStorage.setItem('tm_filters', JSON.stringify(filters)); } catch (e) {} render(); };
+    });
+    $('tm-list').addEventListener('click', function (e) {
+      var b = e.target.closest('.tm-end');
+      if (b && !b.disabled) { b.textContent = 'Ending…'; endTask(b.dataset.pkg); }
+    });
+    $('tm-bg').onclick = async function () {
+      if (!state.data || !confirm('End every background app?')) return;
+      for (var i = 0; i < state.data.apps.length; i++) {
+        var a = state.data.apps[i];
+        if (a.status === 'Background' && !a.system) await endTask(a.pkg);
+      }
+    };
+    refresh();
+    state.timer = setInterval(refresh, 5000);
+  };
+})();
+</script>
 <!-- device naming -->
 <script>
   function saveDeviceName(v) {
@@ -837,45 +1016,84 @@ function showPairLog() {
 <div class="toast" id="toast"></div>
 
 <!-- SETTINGS PANEL -->
-<div id="settings-panel" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);z-index:200;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;">
-  <div style="width:100%;max-width:320px;background:var(--surface);border-radius:16px;padding:20px;border:1px solid var(--border);display:flex;flex-direction:column;gap:16px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:16px;font-weight:700;">⚙ Settings</span>
-      <button onclick="closeSettings()" style="background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">✕</button>
+<style>
+  .set-card { background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:14px 16px; display:flex; flex-direction:column; gap:10px; }
+  .set-title { display:flex; align-items:center; gap:8px; font-size:11px; font-weight:700; letter-spacing:1px; color:var(--text-dim); text-transform:uppercase; }
+  .set-dot { width:9px; height:9px; border-radius:50%; background:#ef5350; margin-left:auto; transition:background .5s; }
+  .set-row { display:flex; gap:8px; align-items:center; }
+  .set-in { flex:1; min-width:0; background:var(--surface2); border:1px solid var(--border); border-radius:10px; color:var(--text); font-size:14px; padding:10px 12px; outline:none; }
+  .set-in:focus { border-color:var(--accent); }
+  .set-btn { background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a); border:1px solid rgba(255,255,255,.08); border-radius:10px; color:#f0f0f0; font-size:13px; font-weight:700; padding:10px 14px; cursor:pointer; box-shadow:0 4px 0 #0a0a0a; white-space:nowrap; }
+  .set-btn:active { transform:translateY(3px); box-shadow:0 1px 0 #0a0a0a; }
+  .set-sub { font-size:12px; color:var(--text-dim); }
+  .set-label { font-size:11px; color:var(--text-dim); margin-bottom:-4px; }
+</style>
+<div id="settings-panel" style="display:none;position:fixed;inset:0;background:#0a0a0a;z-index:200;flex-direction:column;overflow-y:auto;">
+  <div style="position:sticky;top:0;z-index:1;display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--surface);border-bottom:1px solid var(--border);">
+    <span style="font-size:17px;font-weight:700;">⚙ Settings</span>
+    <button onclick="closeSettings()" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;padding:0 4px;">✕</button>
+  </div>
+  <div style="width:100%;max-width:420px;margin:0 auto;padding:16px 16px 40px;display:flex;flex-direction:column;gap:14px;">
+
+    <div class="set-card">
+      <div class="set-title">This device</div>
+      <div class="set-row">
+        <input id="device-name-input" class="set-in" type="text" maxlength="20" placeholder="Name this device">
+        <button class="set-btn" onclick="renameDevice()">Save</button>
+      </div>
+      <div class="set-sub">The TV shows this name when it asks to allow the connection.</div>
+      <div class="set-row" style="justify-content:space-between;">
+        <span class="set-sub">Version <b id="app-version-display" style="color:var(--accent);"></b></span>
+        <button class="set-btn" style="padding:7px 12px;font-size:12px;" onclick="checkAndUpdate()">Check for updates</button>
+      </div>
+      <span id="device-name-display" style="display:none;"></span>
     </div>
-    <div style="border-top:1px solid var(--border);padding-top:12px;">
-      <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px;">CONNECTION</div>
 
-      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">TV IP: <span id="settings-ip" style="color:var(--accent);"></span></div>
-      <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Device Name: <span id="device-name-display" style="color:var(--accent);"></span></div>
-      <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <input id="device-name-input" type="text" maxlength="20" placeholder="Name this device (e.g. John phone)" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
-        <button onclick="renameDevice()" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#f0f0f0;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a;">Save</button>
+    <div class="set-card">
+      <div class="set-title">📺 TV <span class="set-dot" id="set-dot-tv"></span></div>
+      <div class="set-row">
+        <input id="tv-ip-input" class="set-in" type="text" inputmode="decimal" placeholder="192.168.68.x">
+        <button class="set-btn" onclick="updateTvIp()">Save</button>
       </div>
-
-      <div style="display:flex;gap:8px;margin-bottom:8px;">
-        <input id="tv-ip-input" type="text" placeholder="192.168.68.x" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
-        <button onclick="updateTvIp()" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#f0f0f0;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a;">Save</button>
-      </div>
-
+      <span id="settings-ip" style="display:none;"></span>
     </div>
-    <div style="border-top:1px solid var(--border);padding-top:12px;">
-        <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:1px;margin-bottom:8px;">DIGI BRIDGE</div>
-        <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px;">Bridge IP: <span id="bridge-ip-display" style="color:var(--accent);"></span></div>
-        <div style="display:flex;gap:8px;">
-          <input id="bridge-ip-input" type="text" placeholder="192.168.68.x" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;padding:8px;outline:none;">
-          <button onclick="updateBridgeIp()" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:8px;color:#f0f0f0;font-size:12px;font-weight:700;padding:8px 12px;cursor:pointer;box-shadow:0 4px 0 #0a0a0a;">Save</button>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-          <span style="font-size:11px;color:#555;">Version: <span id="app-version-display" style="color:#4fc3f7;"></span></span>
-          <button onclick="checkAndUpdate()" style="background:radial-gradient(circle at 35% 35%,#3a3a3a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#f0f0f0;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">Check Updates</button>
-<button onclick="trustTvCertificate()" style="background:radial-gradient(circle at 35% 35%,#1a2a1a,#0a1a0a);border:1px solid rgba(79,195,247,0.3);border-radius:6px;color:#4fc3f7;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">🔐 Trust TV Certificate</button>
-<button onclick="adbTest()" style="background:radial-gradient(circle at 35% 35%,#1a2a1a,#0a1a0a);border:1px solid rgba(102,187,106,0.4);border-radius:6px;color:#66bb6a;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">ADB test</button>
-<button onclick="showPairLog()" style="background:radial-gradient(circle at 35% 35%,#2a2a1a,#1a1a0a);border:1px solid rgba(255,202,40,0.4);border-radius:6px;color:#ffca28;font-size:11px;font-weight:700;cursor:pointer;padding:4px 10px;box-shadow:0 4px 0 #0a0a0a;">Pairing log</button>
-        </div>
+
+    <div class="set-card">
+      <div class="set-title">📡 Decoder <span class="set-dot" id="set-dot-digi"></span></div>
+      <div class="set-row">
+        <input id="bridge-ip-input" class="set-in" type="text" inputmode="decimal" placeholder="192.168.68.x">
+        <button class="set-btn" onclick="updateBridgeIp()">Save</button>
       </div>
+      <div class="set-sub" id="set-link"></div>
+      <span id="bridge-ip-display" style="display:none;"></span>
+    </div>
+
+    <div class="set-card">
+      <div class="set-title">🌐 Networks</div>
+      <div class="set-sub">The addresses the app tries when you switch network.</div>
+      <div class="set-label">Home: decoder, TV</div>
+      <div class="set-row">
+        <input id="np0-bridge" class="set-in" type="text" inputmode="decimal">
+        <input id="np0-tv" class="set-in" type="text" inputmode="decimal">
+      </div>
+      <div class="set-label">Hotspot: decoder, TV</div>
+      <div class="set-row">
+        <input id="np1-bridge" class="set-in" type="text" inputmode="decimal">
+        <input id="np1-tv" class="set-in" type="text" inputmode="decimal">
+      </div>
+      <button class="set-btn" onclick="saveProfiles()">Save networks</button>
+    </div>
+
+    <div class="set-card">
+      <div class="set-title">Tools</div>
+      <button class="set-btn" onclick="closeSettings();openTaskManager()">📊 Task manager</button>
+      <button class="set-btn" onclick="trustTvCertificate()">🔐 Trust TV certificate</button>
+      <div class="set-sub">Only needed in a normal browser. The Android app doesn't need it.</div>
+    </div>
+
   </div>
 </div>
+
 
 <!-- REMOTE UI -->
 <div class="status-bar">
@@ -2072,6 +2290,7 @@ function tvOff() {
     sheet.innerHTML = '<style>#running-apps-tray:empty::before{content:"No apps running";color:#777;font-size:12px;}</style>'
       + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
       + '<span style="color:#f0f0f0;font-weight:700;font-size:13px;letter-spacing:.5px;">RUNNING APPS</span>'
+      + '<button onclick="openRunningApps();openTaskManager()" style="background:#262833;border:1px solid #3a3d4a;color:#4fc3f7;border-radius:8px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;">Task manager</button>'
       + '<span onclick="openRunningApps()" style="color:#888;font-size:20px;padding:2px 10px;cursor:pointer;">✕</span></div>'
       + '<div id="running-apps-tray" style="display:flex;flex-wrap:wrap;gap:10px;min-height:60px;"></div>';
     document.body.appendChild(sheet);
