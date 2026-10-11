@@ -680,9 +680,9 @@ svg[viewBox="90 90 320 320"] text { fill: #f6c35a !important; }
 </style>
 <style>
 svg[viewBox="90 90 320 320"] { filter: drop-shadow(0 4px 0 #05060f) drop-shadow(0 9px 12px rgba(0,0,0,.6)) !important; }
-svg[viewBox="90 90 320 320"] path[fill="white"] { fill: #f6c35a !important; opacity: 1 !important; filter: drop-shadow(0 0 4px rgba(246,195,90,.6)); }
-svg[viewBox="90 90 320 320"] circle.dp-ok0 { fill: url(#dp-o0) !important; stroke: #f2b84b !important; stroke-width: 3 !important; filter: drop-shadow(0 0 5px rgba(246,195,90,.4)); }
-svg[viewBox="90 90 320 320"] circle.dp-ok1 { fill: url(#dp-o1) !important; stroke: #f2b84b !important; stroke-width: 3 !important; filter: drop-shadow(0 0 5px rgba(246,195,90,.4)); }
+svg[viewBox="90 90 320 320"] path[fill="white"] { fill: #f6c35a !important; opacity: 1 !important;  }
+svg[viewBox="90 90 320 320"] circle.dp-ok0 { fill: url(#dp-o0) !important; stroke: #f2b84b !important; stroke-width: 3 !important;  }
+svg[viewBox="90 90 320 320"] circle.dp-ok1 { fill: url(#dp-o1) !important; stroke: #f2b84b !important; stroke-width: 3 !important;  }
 svg[viewBox="90 90 320 320"] circle.dp-ring { fill: none !important; stroke: #080a18 !important; stroke-width: 7 !important; filter: none !important; }
 svg[viewBox="90 90 320 320"] ellipse.dp-gl { display: inline !important; }
 </style>
@@ -716,7 +716,7 @@ svg[viewBox="90 90 320 320"] { filter: drop-shadow(0 7px 0 #05060f) drop-shadow(
   background: radial-gradient(circle at 50% 16%, #3a3e5e 0%, #1c1f38 50%, #0d0f1f 100%) !important;
   box-shadow: 0 0 0 2px rgba(8,10,24,.9), 0 3px 6px rgba(0,0,0,.5), inset 0 2px 4px rgba(0,0,0,.5) !important;
 }
-svg[viewBox="90 90 320 320"] path.pressed { transform: translateY(4px); filter: brightness(.75); }
+
 .dp-sec0 { fill: url(#dp-s0) !important; }
 .dp-sec1 { fill: url(#dp-s1) !important; }
 </style>
@@ -2109,7 +2109,7 @@ function openBridgeControl() {
   }
 
   // ─── LAUNCH APP ───────────────────────────────────────────
-  function launchTvApp(appId, name) {
+  function launchTvApp(appId, name) { try { fetch('http://' + TV_IP + ':8001/api/v2/applications/' + appId, { method: 'POST', mode: 'no-cors' }); showToast('🚀 Launching ' + name); } catch (e) { showToast('❌ Could not launch app'); } return;
     fetch(`http://${TV_IP}:8001/api/v2/applications/${appId}`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'}
@@ -3331,14 +3331,14 @@ function tvOff() {
         }, 300);
       }, 700);
     } else {
-      // Dpad/CH: send immediately then repeat on hold
+      clearTimeout(repeatTimer); clearInterval(repeatInterval); // Dpad/CH: send immediately then repeat on hold
       sendKey(key);
       let fired = true;
       repeatTimer = setTimeout(() => {
         repeatInterval = setInterval(() => {
           sendKey(key);
-        }, 50);
-      }, 150);
+        }, 120);
+      	}, 450);
       window._repeatFired = () => fired;
       window._repeatKey = null;
     }
@@ -3859,7 +3859,7 @@ function tvOff() {
   document.addEventListener('pointerdown', function (e) {
     var b = e.target.closest('.btn, .vc-btn, .vc-mid, #btn-samsung, #btn-digi');
     if (b) { b.classList.add('pressed'); downEls.push(b); return; }
-    var p = e.target.closest && e.target.closest('path.dp-sec0, path.dp-sec1');
+    var p = null;
     if (p) {
       var g = p.nextElementSibling, a = g && g.nextElementSibling;
       [p, g, a].forEach(function (x) { if (x) { x.classList.add('pressed'); downEls.push(x); } });
@@ -3876,6 +3876,27 @@ function tvOff() {
     var row = inp.parentElement && inp.parentElement.parentElement; if (!row) return;
     row.querySelectorAll(':scope > button').forEach(function (b) { b.classList.add('kb-enter'); });
   });
+})();
+</script>
+<script>
+(function () {
+  var sx = 0, sy = 0, st = 0, ok = false;
+  var BLOCK = 'input, textarea, select, svg, .vc-group, #settings-panel, #tm-overlay, #running-apps-sheet, #app-menu, #bridge-ctl, #rename-modal, #ask-confirm, [id*="trackpad"], [id*="pad"]';
+  document.addEventListener('touchstart', function (e) {
+    if (e.touches.length !== 1) { ok = false; return; }
+    var t = e.touches[0];
+    ok = !(e.target.closest && e.target.closest(BLOCK));
+    sx = t.clientX; sy = t.clientY; st = Date.now();
+  }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (!ok) return; ok = false;
+    var t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Date.now() - st > 600 || Math.abs(dx) < 70 || Math.abs(dy) > 45 || Math.abs(dx) < 2 * Math.abs(dy)) return;
+    var sam = document.getElementById('btn-samsung');
+    var onSam = sam && /2px solid/.test(sam.getAttribute('style') || '');
+    if (dx < 0 && onSam) switchDevice('digi');
+    else if (dx > 0 && !onSam) switchDevice('samsung');
+  }, { passive: true });
 })();
 </script>
 </body>
