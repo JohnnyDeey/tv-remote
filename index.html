@@ -836,7 +836,7 @@ window.addEventListener('load', function () {
       if (b && !b.disabled) { b.textContent = 'Ending…'; endTask(b.dataset.pkg); }
     });
     $('tm-bg').onclick = async function () {
-      if (!state.data || !confirm('End every background app?')) return;
+      if (!state.data || !(await askConfirm('End all background apps?', 'Apps running in the background will be stopped.', 'End all'))) return;
       for (var i = 0; i < state.data.apps.length; i++) {
         var a = state.data.apps[i];
         if (a.status === 'Background' && !a.system) await endTask(a.pkg);
@@ -889,7 +889,7 @@ function showAppMenu(pkg) {
   document.getElementById('am-edit').onclick = function () { close(); renameApp(pkg); };
   document.getElementById('am-un').onclick = async function () {
     close();
-    if (!confirm('Uninstall ' + name + ' from the decoder?')) return;
+    if (!(await askConfirm('Uninstall ' + name + '?', 'This removes the app from the decoder.', 'Uninstall'))) return;
     var adb = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Adb;
     if (!adb || !/^[A-Za-z0-9_.]+$/.test(pkg)) { showToast('Uninstall works in the Android app only'); return; }
     try {
@@ -898,6 +898,33 @@ function showAppMenu(pkg) {
       else showToast('Could not uninstall ' + name);
     } catch (e) { showToast('Could not uninstall ' + name); }
   };
+}
+</script>
+<!-- in-app confirmation dialog -->
+<script>
+function askConfirm(title, text, okLabel) {
+  return new Promise(function (resolve) {
+    var old = document.getElementById('ask-confirm'); if (old) old.remove();
+    var o = document.createElement('div');
+    o.id = 'ask-confirm';
+    o.style.cssText = 'position:fixed;inset:0;z-index:100002;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);padding:24px;';
+    o.innerHTML =
+      '<div style="background:#1e1e1e;border:1px solid #333;border-radius:16px;padding:22px;width:100%;max-width:300px;display:flex;flex-direction:column;gap:12px;">' +
+      '<b id="ac-title" style="color:#f0f0f0;font-size:15px;"></b>' +
+      '<span id="ac-text" style="color:#8b8f9c;font-size:13px;line-height:1.4;"></span>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">' +
+      '<button id="ac-no" style="background:#2a2a2a;border:1px solid #333;border-radius:10px;padding:11px;color:#aaa;font-weight:700;">Cancel</button>' +
+      '<button id="ac-yes" style="background:#2a1a1a;border:1px solid #c62828;border-radius:10px;padding:11px;color:#ef5350;font-weight:700;"></button>' +
+      '</div></div>';
+    document.body.appendChild(o);
+    document.getElementById('ac-title').textContent = title;
+    document.getElementById('ac-text').textContent = text || '';
+    document.getElementById('ac-yes').textContent = okLabel || 'OK';
+    var done = function (v) { o.remove(); resolve(v); };
+    document.getElementById('ac-no').onclick = function () { done(false); };
+    document.getElementById('ac-yes').onclick = function () { done(true); };
+    o.onclick = function (e) { if (e.target === o) done(false); };
+  });
 }
 </script>
 <!-- device naming -->
@@ -2156,7 +2183,7 @@ function showAppMenu(pkg) {
     const meta = sharedAppMeta[pkg] || {};
     const appLabel = meta.name || APP_NAMES[pkg] || pkg.split('.').pop();
     const letter = appLabel[0].toUpperCase();
-    return `<button onclick="digiLaunchApp('${pkg}')" oncontextmenu="event.preventDefault();renameApp('${pkg}')" ontouchstart="startAppLongPress('${pkg}')" ontouchend="clearAppLongPress()" style="background:radial-gradient(circle at 35% 35%,#2a2a2a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#f0f0f0;padding:8px 4px;cursor:pointer;box-shadow:0 4px 0 #000;display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;height:80px;overflow:hidden;">
+    return `<button onclick="digiLaunchApp('${pkg}')" oncontextmenu="event.preventDefault();showAppMenu('${pkg}')" ontouchstart="startAppLongPress('${pkg}')" ontouchend="clearAppLongPress()" style="background:radial-gradient(circle at 35% 35%,#2a2a2a,#1a1a1a);border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:#f0f0f0;padding:8px 4px;cursor:pointer;box-shadow:0 4px 0 #000;display:flex;flex-direction:column;align-items:center;gap:5px;width:100%;height:80px;overflow:hidden;">
       <div style="width:36px;height:36px;border-radius:10px;background:${color};display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;flex-shrink:0;">${letter}</div>
       <span style="font-size:9px;font-weight:600;text-align:center;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px;">${appLabel}</span>
     </button>`;
