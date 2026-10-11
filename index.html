@@ -544,6 +544,42 @@
     box-shadow: inset 0 3px 8px rgba(0,0,0,0.6);
   }
 </style>
+<!-- 3D glossy tiles for the TV app shortcuts -->
+<style>
+.section button[onclick*="launchTvApp("], .section button[onclick*="launchApp("] {
+  --c1:#6a6a6a; --c2:#2a2a2a; --c3:#111;
+  position:relative; overflow:hidden; border:none !important; border-radius:22px !important;
+  padding:9px 4px 7px !important; margin-bottom:7px;
+  background:linear-gradient(160deg,var(--c1),var(--c2)) !important;
+  box-shadow:0 6px 0 var(--c3), 0 11px 13px rgba(0,0,0,.55), inset 0 3px 5px rgba(255,255,255,.5), inset 0 -8px 12px rgba(0,0,0,.28) !important;
+  transition:transform .08s, box-shadow .08s;
+}
+.section button[onclick*="launchTvApp("]::before, .section button[onclick*="launchApp("]::before {
+  content:""; position:absolute; left:8%; right:8%; top:3px; height:42%;
+  border-radius:18px 18px 40px 40px;
+  background:linear-gradient(180deg,rgba(255,255,255,.38),rgba(255,255,255,0));
+  pointer-events:none;
+}
+.section button[onclick*="launchTvApp("]:active, .section button[onclick*="launchApp("]:active {
+  transform:translateY(4px);
+  box-shadow:0 2px 0 var(--c3), 0 5px 8px rgba(0,0,0,.5), inset 0 3px 5px rgba(255,255,255,.35), inset 0 -6px 10px rgba(0,0,0,.3) !important;
+}
+.section button[onclick*="launchTvApp("] svg, .section button[onclick*="launchApp("] svg {
+  width:36px; height:22px; position:relative; z-index:1; filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));
+}
+.section button[onclick*="launchTvApp("] svg rect, .section button[onclick*="launchApp("] svg rect,
+.section button[onclick*="launchTvApp("] svg circle, .section button[onclick*="launchApp("] svg circle { fill:transparent !important; }
+.section button[onclick*="3201907018807"] svg path { fill:#fff !important; }
+.section button[onclick*="launchTvApp("] span, .section button[onclick*="launchApp("] span {
+  position:relative; z-index:1; color:#fff !important; text-shadow:0 1px 2px rgba(0,0,0,.45);
+}
+.section button[onclick*="3201907018807"] { --c1:#ff3b3b; --c2:#b20710; --c3:#6e050a; }  /* Netflix */
+.section button[onclick*="111299001912"]  { --c1:#ff4a4a; --c2:#d40000; --c3:#7d0000; }  /* YouTube */
+.section button[onclick*="3201910019365"] { --c1:#35c4f0; --c2:#0086b8; --c3:#004f6e; }  /* Prime */
+.section button[onclick*="3201901017640"] { --c1:#3f6cf5; --c2:#0c2fa5; --c3:#071c63; }  /* Disney+ */
+.section button[onclick*="3201606009684"] { --c1:#3fe27e; --c2:#14953f; --c3:#0a5724; }  /* Spotify */
+.section button[onclick*="3201511006428"] { --c1:#e03030; --c2:#8f0000; --c3:#560000; }  /* Rakuten */
+</style>
 </head>
 <body>
 <!-- decoder link through the native ADB plugin (replaces the Termux bridge inside the Android app) -->
@@ -1900,7 +1936,7 @@ function openBridgeControl() {
       .catch(e => showToast('❌ Could not launch app'));
   }
 
-  function launchApp(appId) {
+  function launchApp(appId) { try { fetch('http://' + TV_IP + ':8001/api/v2/applications/' + appId, { method: 'POST', mode: 'no-cors' }); showToast('Launching...'); } catch (e) { showToast('Could not launch app'); } return;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
       showToast('Not connected');
       return;
