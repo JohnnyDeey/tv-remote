@@ -927,6 +927,86 @@ function askConfirm(title, text, okLabel) {
   });
 }
 </script>
+<!-- start / stop dbridge on the decoder (Termux) from the phone -->
+<script>
+(function () {
+  function adb() { return window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Adb; }
+  function sh(c) { return adb().shell({ command: c }); }
+  function wait(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+  function type(t) { return sh("input text '" + t + "'"); }
+  function enter() { return sh('input keyevent 66'); }
+
+  window.bridgeUp = function () {
+    return new Promise(function (res) {
+      var ip = localStorage.getItem('bridge_ip') || '';
+      if (!ip) return res(false);
+      var done = false, w;
+      var fin = function (v) { if (done) return; done = true; try { w.close(); } catch (e) {} res(v); };
+      try { w = new WebSocket('ws://' + ip + ':8765'); } catch (e) { return res(false); }
+      w.onopen = function () { fin(true); };
+      w.onerror = function () { fin(false); };
+      setTimeout(function () { fin(false); }, 2500);
+    });
+  };
+
+  window.bridgeStart = async function () {
+    if (!adb()) { showToast('Works in the Android app only'); return; }
+    if (await bridgeUp()) { showToast('Bridge is already running'); return; }
+    showToast('Starting the bridge...');
+    try {
+      await sh('am force-stop com.termux'); await wait(1500);
+      await sh('am start -n com.termux/.app.TermuxActivity'); await wait(4000);
+      await type('/data/data/com.termux/files/usr/bin/adb%sconnect%slocalhost:5555'); await enter(); await wait(3000);
+      await type('python%s/sdcard/dbridge.py'); await enter(); await wait(3000);
+      await sh('input keyevent 3');
+    } catch (e) { showToast('Could not start the bridge'); return; }
+    await wait(1500);
+    showToast((await bridgeUp()) ? 'Bridge is running' : 'Bridge did not start');
+  };
+
+  window.bridgeStop = async function () {
+    if (!adb()) { showToast('Works in the Android app only'); return; }
+    try { await sh('am force-stop com.termux'); } catch (e) { showToast('Could not stop the bridge'); return; }
+    await wait(1000);
+    showToast((await bridgeUp()) ? 'Bridge is still running' : 'Bridge stopped');
+  };
+})();
+</script>
+<!-- bridge control sheet -->
+<script>
+function openBridgeControl() {
+  var old = document.getElementById('bridge-ctl'); if (old) { old.remove(); return; }
+  var s = document.createElement('div');
+  s.id = 'bridge-ctl';
+  s.style.cssText = 'position:fixed;inset:0;z-index:100000;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.6);';
+  s.innerHTML =
+    '<div style="background:#1a1a1a;border-radius:16px 16px 0 0;width:100%;max-width:400px;padding:18px 20px 26px;display:flex;flex-direction:column;gap:14px;">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+    '<b style="color:#f0f0f0;font-size:15px;">Decoder bridge</b>' +
+    '<span id="bc-state" style="font-size:12px;color:#8b8f9c;display:flex;align-items:center;gap:6px;"><i id="bc-dot" style="width:9px;height:9px;border-radius:50%;background:#666;display:inline-block"></i><span id="bc-text">Checking...</span></span></div>' +
+    '<span style="color:#8b8f9c;font-size:12px;line-height:1.4;">Only needed for browsers. The phone app controls the decoder directly.</span>' +
+    '<div style="display:flex;gap:8px;">' +
+    '<button id="bc-start" style="flex:1;background:#1e2a1e;border:1px solid #2e7d32;border-radius:12px;padding:14px;color:#66bb6a;font-weight:700;">Start</button>' +
+    '<button id="bc-stop" style="flex:1;background:#2a1a1a;border:1px solid #c62828;border-radius:12px;padding:14px;color:#ef5350;font-weight:700;">Stop</button>' +
+    '<button id="bc-x" style="flex:1;background:#222;border:1px solid #444;border-radius:12px;padding:14px;color:#888;font-weight:700;">Close</button>' +
+    '</div></div>';
+  document.body.appendChild(s);
+  var upd = async function () {
+    var up = await bridgeUp();
+    var d = document.getElementById('bc-dot'), t = document.getElementById('bc-text');
+    if (!d) return;
+    d.style.background = up ? '#4caf50' : '#ef5350';
+    t.textContent = up ? 'Running' : 'Stopped';
+  };
+  var busy = false;
+  var run = async function (fn) { if (busy) return; busy = true; try { await fn(); } finally { busy = false; upd(); } };
+  s.onclick = function (e) { if (e.target === s) s.remove(); };
+  document.getElementById('bc-x').onclick = function () { s.remove(); };
+  document.getElementById('bc-start').onclick = function () { run(bridgeStart); };
+  document.getElementById('bc-stop').onclick = function () { run(bridgeStop); };
+  upd();
+}
+</script>
 <!-- device naming -->
 <script>
   function saveDeviceName(v) {
@@ -1126,7 +1206,7 @@ function askConfirm(title, text, okLabel) {
         <span class="set-sub">Version <b id="app-version-display" style="color:var(--accent);"></b></span>
         <button class="set-btn" style="padding:7px 12px;font-size:12px;" onclick="checkAndUpdate()">Check for updates</button>
       </div>
-      <span id="device-name-display" style="display:none;"></span>
+      <span id="device-name-display" style="display:none;"></span><div class="set-row" style="justify-content:space-between;"><span class="set-sub">Decoder bridge (browsers only)</span><button class="set-btn" style="padding:7px 12px;font-size:12px;" onclick="openBridgeControl()">Open</button></div>
     </div>
 
     <div class="set-card">
