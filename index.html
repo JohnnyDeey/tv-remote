@@ -2278,7 +2278,7 @@ function tvOff() {
         }
       } catch(err) {}
     };
-    testWs.onerror = () => {
+    var wk = false; const wake = () => { if (wk) return; wk = true; try { testWs.close(); } catch(e) {} wakeTv(); }; setTimeout(() => { if (!connected && testWs.readyState !== 1) wake(); }, 4000); testWs.onerror = () => { wake(); return;
       try { testWs.close(); } catch(e) {}
       showPowerToast();
     };
