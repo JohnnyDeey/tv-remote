@@ -847,6 +847,23 @@ window.addEventListener('load', function () {
   };
 })();
 </script>
+<!-- wake the TV from deep sleep with the phone's infrared blaster -->
+<script>
+async function wakeTv() {
+  var ir = window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.IrBlaster;
+  if (!ir) { wakeTv(); return; }
+  try {
+    var has = await ir.hasIrBlaster();
+    if (!has.available) { showPowerToast(); return; }
+    // a TV that still answers on the network is awake or in a light standby: don't toggle it off by mistake
+    var up = await probeTv(TV_IP, 1500);
+    if (up) { showToast('The TV is on the network, try again in a moment'); return; }
+    await ir.powerToggle();      // the same code the physical remote sends
+    showToast('Waking the TV...');
+    setTimeout(findTV, 6000);    // then connect to it
+  } catch (e) { showPowerToast(); }
+}
+</script>
 <!-- device naming -->
 <script>
   function saveDeviceName(v) {
