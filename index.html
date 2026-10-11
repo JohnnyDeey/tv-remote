@@ -1007,6 +1007,46 @@ function openBridgeControl() {
   upd();
 }
 </script>
+<!-- bridge card in Settings: colored Start / Stop with status dot -->
+<script>
+(function () {
+  var GREEN = { bg: '#1e2a1e', bd: '#2e7d32', c: '#66bb6a' };
+  var RED = { bg: '#2a1a1a', bd: '#c62828', c: '#ef5350' };
+  var GRAY = { bg: '#262833', bd: '#2a2c35', c: '#6b6f7c' };
+  var busy = false;
+
+  function paint(id, col, txt) {
+    var b = document.getElementById(id); if (!b) return;
+    b.style.background = col.bg; b.style.border = '1px solid ' + col.bd; b.style.color = col.c;
+    if (txt) b.textContent = txt;
+  }
+
+  function show(up) {
+    var dot = document.getElementById('set-dot-bridge'), txt = document.getElementById('bridge-state-txt');
+    if (dot) dot.style.background = up ? '#66bb6a' : '#ef5350';
+    if (txt) txt.textContent = up ? 'Running. Browsers can control the decoder.' : 'Stopped. Browsers only; the phone app does not need it.';
+    paint('bridge-start-btn', up ? GREEN : GRAY, 'Start');
+    paint('bridge-stop-btn', up ? GRAY : RED, 'Stop');
+  }
+
+  window.bridgeCardUpdate = async function () { show(await bridgeUp()); };
+
+  window.bridgeCardStart = async function () {
+    if (busy) return; busy = true; paint('bridge-start-btn', GREEN, 'Starting...');
+    try { await bridgeStart(); } finally { busy = false; bridgeCardUpdate(); }
+  };
+
+  window.bridgeCardStop = async function () {
+    if (busy) return; busy = true; paint('bridge-stop-btn', RED, 'Stopping...');
+    try { await bridgeStop(); } finally { busy = false; bridgeCardUpdate(); }
+  };
+
+  if (typeof fillSettings === 'function') {
+    var base = fillSettings;
+    fillSettings = function () { base(); bridgeCardUpdate(); };
+  }
+})();
+</script>
 <!-- device naming -->
 <script>
   function saveDeviceName(v) {
@@ -1206,7 +1246,7 @@ function openBridgeControl() {
         <span class="set-sub">Version <b id="app-version-display" style="color:var(--accent);"></b></span>
         <button class="set-btn" style="padding:7px 12px;font-size:12px;" onclick="checkAndUpdate()">Check for updates</button>
       </div>
-      <span id="device-name-display" style="display:none;"></span><div class="set-row" style="justify-content:space-between;"><span class="set-sub">Decoder bridge (browsers only)</span><button class="set-btn" style="padding:7px 12px;font-size:12px;" onclick="openBridgeControl()">Open</button></div>
+      <span id="device-name-display" style="display:none;"></span></div><div class="set-card"><div class="set-title">🌉 TERMUX bridge <span class="set-dot" id="set-dot-bridge" style="background:#666;"></span></div><div class="set-row"><button class="set-btn" id="bridge-start-btn" onclick="bridgeCardStart()" style="flex:1;">Start</button><button class="set-btn" id="bridge-stop-btn" onclick="bridgeCardStop()" style="flex:1;">Stop</button></div><div class="set-sub" id="bridge-state-txt">Checking...</div>
     </div>
 
     <div class="set-card">
