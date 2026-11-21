@@ -1046,6 +1046,14 @@ function saveProfiles() {
   list.forEach(function (p, i) { NET_PROFILES[i].bridge = p.bridge; NET_PROFILES[i].tv = p.tv; });
   localStorage.setItem('net_profiles', JSON.stringify(list));
   showToast('Networks saved');
+  findDecoder().then(function (ip) {
+    if (ip) {
+      localStorage.setItem('bridge_ip', ip);
+      localStorage.setItem('tv_ip', TV_IP);
+      try { if (digiWs) digiWs.close(); } catch (e) {}
+      setTimeout(connectDigi, 300);
+    }
+  });
 }
 window.addEventListener('load', function () {
   try {   // use the networks you saved, if any
@@ -1418,8 +1426,8 @@ function openBridgeControl() {
 </script>
 <!-- network call-out: tap a dot to see the network state (symbols only) -->
 <style>
-  @keyframes dotPulse { 0%,100% { box-shadow: 0 0 0 0 rgba(239,83,80,.65); } 50% { box-shadow: 0 0 0 5px rgba(239,83,80,0); } }
-  .dot-pulse { animation: dotPulse 1.6s infinite; }
+  @keyframes dotPulse { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+  .dot-pulse { animation: dotPulse 1.6s infinite; will-change: opacity; }
   /* test buttons, hidden but kept for debugging: remove these two lines to show them again */
   button[onclick="adbTest()"], button[onclick="showPairLog()"] { display: none !important; }
 </style>
@@ -3033,6 +3041,7 @@ function tvOff() {
     { name: 'Home',    bridge: '192.168.68.107', tv: '192.168.68.100' },
     { name: 'Hotspot', bridge: '10.136.134.200',  tv: '10.136.134.201'   }
   ];
+    try { var _sp = JSON.parse(localStorage.getItem('net_profiles') || 'null'); if (_sp) _sp.forEach(function (p, i) { if (NET_PROFILES[i]) { NET_PROFILES[i].bridge = p.bridge; NET_PROFILES[i].tv = p.tv; } }); } catch (e) {}
   // ---- TV is found on its own: try every known TV address, use whichever answers ----
   async function probeTv(ip, ms) {
     try {
@@ -4037,6 +4046,21 @@ window._digiRetry = setTimeout(connectDigi, Math.min(1000 * (digiFailCount + 1),
     if (dx < 0 && onSam) switchDevice('digi');
     else if (dx > 0 && !onSam) switchDevice('samsung');
   }, { passive: true });
+})();
+</script>
+<script>
+(function () {
+  history.pushState({ tv: 1 }, '');
+  window.addEventListener('popstate', function () {
+    history.pushState({ tv: 1 }, '');
+    var sp = document.getElementById('settings-panel');
+    if (sp && getComputedStyle(sp).display !== 'none') { if (typeof closeSettings === 'function') closeSettings(); return; }
+    ['kill-app-menu', 'running-apps-sheet', 'apps-modal', 'net-callout'].some(function (id) {
+      var e = document.getElementById(id);
+      if (e) { e.remove(); return true; }
+      return false;
+    });
+  });
 })();
 </script>
 </body>
