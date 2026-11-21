@@ -767,7 +767,7 @@ svg[viewBox="90 90 320 320"] { filter: drop-shadow(0 7px 0 #05060f) drop-shadow(
 <script>
 // ─── CRASH MONITOR ───────────────────────────────────────
 (function () {
-  const K = 'crashmon_v1';
+  const K = 'crashmon_v2';
   let st; try { st = JSON.parse(localStorage.getItem(K)) || {}; } catch (e) { st = {}; }
   st.reports = st.reports || [];
   const crumbs = [], timers = new Map();
@@ -855,6 +855,9 @@ svg[viewBox="90 90 320 320"] { filter: drop-shadow(0 7px 0 #05060f) drop-shadow(
     const b = e.target.closest && e.target.closest('button,[onclick]');
     if (b) crumb('tap ' + (b.id || (b.getAttribute('onclick') || b.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40)));
   }, true);
+  try {
+    new PerformanceObserver(l => l.getEntries().forEach(e => crumb('LONG TASK ' + Math.round(e.duration) + 'ms'))).observe({ entryTypes: ['longtask'] });
+  } catch (e) {}
   crumb('app started');
 
   const PIN_HASH = '592f3dc66ad859093906944ce08bc2a17dc88ede721fe30b72a892879df03773';
@@ -1640,7 +1643,7 @@ function openBridgeControl() {
       <div class="set-title">Tools</div>
       <button class="set-btn" onclick="closeSettings();openTaskManager()">📊 Task manager</button>
       <button class="set-btn" onclick="trustTvCertificate()">🔐 Trust TV certificate</button>
-      <button class="set-btn" onclick="copyCrashLog()">🩺 Copy crash log</button>
+      <button class="set-btn" onclick="copyCrashLog()">🩺 Activity log</button>
       
     </div>
 
@@ -1984,7 +1987,7 @@ function openBridgeControl() {
 
   <!-- NAV ROW -->
   <div class="section">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">
       <button class="btn" onclick="digiKey('back')">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f0f0f0" stroke-width="2" stroke-linecap="round">
           <polyline points="15 18 9 12 15 6"/>
@@ -1996,13 +1999,7 @@ function openBridgeControl() {
           <path d="M7 3h12a2 2 0 0 1 2 2v12"/>
         </svg>
       </button>
-      <button class="btn" onclick="openMousePanel()" title="Mouse">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ce93d8" stroke-width="2" stroke-linecap="round">
-          <rect x="6" y="2" width="12" height="20" rx="6"/>
-          <line x1="12" y1="2" x2="12" y2="10"/>
-          <line x1="6" y1="10" x2="18" y2="10"/>
-        </svg>
-      </button>
+      
       <button class="btn" onmousedown="startRepeat('del','digi')" onmouseup="stopRepeat()" onmouseleave="stopRepeat()" ontouchstart="event.preventDefault();startRepeat('del','digi')" ontouchend="event.preventDefault();stopRepeat();" style="font-size:22px;padding:16px;">⌫</button>
     </div>
   </div>
